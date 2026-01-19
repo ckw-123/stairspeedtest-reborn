@@ -4,7 +4,7 @@ mkdir "$USERPROFILE/clients/built"
 cd "$USERPROFILE/clients"
 set -xe
 
-if [ ! -d mbedtls/ ]; then git clone https://github.com/Mbed-TLS/mbedtls --branch mbedtls-2.28 --depth=1; fi
+if [ ! -d mbedtls/ ]; then git clone https://github.com/Mbed-TLS/mbedtls --branch v2.28.10 --depth=1; fi
 cd mbedtls
 git pull --ff-only
 cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_PROGRAMS=OFF -DENABLE_TESTING=OFF -DMBEDTLS_FATAL_WARNINGS=OFF -DUSE_STATIC_MBEDTLS_LIBRARY=ON -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" -G "Unix Makefiles" .
