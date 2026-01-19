@@ -16,7 +16,7 @@ if [ ! -d libev-mingw/ ]; then # assume libev-mingw will never update again
   tar xvf mingw.tar.gz
   cd libev-mingw
   mkdir build
-  ./configure --prefix="$PWD/build"
+  ./configure --prefix="$PWD/build" CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion"
   make install -j4
   cd ..
 fi
