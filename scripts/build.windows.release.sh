@@ -1,7 +1,7 @@
 #!/bin/bash
 set -xe
 
-cmake -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" .
+cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" .
 make -j4
 rm stairspeedtest.exe
 
