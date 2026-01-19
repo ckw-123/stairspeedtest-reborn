@@ -27,7 +27,7 @@ cd ..
 if [ ! -d pngwriter/ ]; then git clone https://github.com/pngwriter/pngwriter --depth=1; fi
 cd pngwriter
 git pull --ff-only
-cmake -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" -G "Unix Makefiles" .
+cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" -G "Unix Makefiles" .
 make install -j4
 cd ..
 
