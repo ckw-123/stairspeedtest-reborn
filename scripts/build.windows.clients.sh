@@ -27,7 +27,7 @@ if [ ! -d simple-obfs/ ]; then # assume simple-obfs will never update again
   cd simple-obfs
   git submodule update --init
   ./autogen.sh
-  ./configure --disable-documentation --with-ev="$LIBEV_PATH" CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion"
+  ./configure --disable-documentation --with-ev="$LIBEV_PATH" 'CFLAGS=-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration'
   make -j4
 else
   cd simple-obfs
