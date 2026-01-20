@@ -51,6 +51,13 @@ jobs:
       run: |
         bash scripts/build.windows.maindeps.sh
         bash scripts/build.windows.clients.sh
+# -----------------------------------------------------------
+# 【新增步骤】删除 Curl 生成的有 Bug 的 CMake 配置文件夹
+# -----------------------------------------------------------
+    - name: Remove broken Curl CMake Config
+      run: |
+        rm -rf /mingw64/lib/cmake/CURL
+    # --- 原有的构建 Release 步骤 ---
     - name: Build main program
       run: |
         bash scripts/build.windows.release.sh
