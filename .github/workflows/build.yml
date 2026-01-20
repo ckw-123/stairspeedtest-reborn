@@ -39,6 +39,12 @@ jobs:
         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/FETCH_HEAD') }} # key from git repos
         restore-keys: |
           ${{ runner.os }}-build-${{ env.cache-name }}-
+# ----------------------------------------------------------------
+# 必须插入下面这个步骤，用于强制修改构建脚本，把 zstd 和 curl 加进去
+# ----------------------------------------------------------------
+    - name: Patch client build script for Trojan dependencies
+      run: |
+        sed -i 's|cmake -DMYSQL_INCLUDE_DIR|sed -i "s/mysqlclient/mysqlclient zstd curl crypt32/g" CMakeLists.txt \&\& cmake -DMYSQL_INCLUDE_DIR|' scripts/build.windows.clients.sh
     - name: Build dependencies and clients
       run: |
         bash scripts/build.windows.maindeps.sh
