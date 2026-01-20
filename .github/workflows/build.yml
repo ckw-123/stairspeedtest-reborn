@@ -39,12 +39,19 @@ jobs:
         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/FETCH_HEAD') }} # key from git repos
         restore-keys: |
           ${{ runner.os }}-build-${{ env.cache-name }}-
+# -----------------------------------------------------------
+# 修改 Curl 构建脚本 (瘦身：禁用 Schannel/Zstd/HTTP2，开启 OpenSSL)
+# 必须在运行 maindeps 之前执行！
+# -----------------------------------------------------------
+    - name: Patch Curl script to disable bloat features
+      run: |
+        sed -i 's/-DCURL_USE_SCHANNEL=ON/-DCURL_USE_SCHANNEL=OFF -DCURL_USE_OPENSSL=ON -DCURL_ZSTD=OFF -DUSE_NGHTTP2=OFF/g' scripts/build.windows.maindeps.sh
+# -----------------------------------------------------------
 # --- 修改这里：直接禁用 Trojan 的 MySQL 功能 ---
     - name: Patch client build script to Disable MySQL
       run: |
         # 解释：找到 cmake 命令，在后面插入 -DENABLE_MYSQL=OFF
         # 这样 Trojan 就不会去链接 mysql、zstd 或 curl 了，彻底解决问题。
-        
         sed -i 's|cmake -DMYSQL_INCLUDE_DIR|cmake -DENABLE_MYSQL=OFF -DMYSQL_INCLUDE_DIR|' scripts/build.windows.clients.sh
 # --- 原有的运行脚本步骤 ---
     - name: Build dependencies and clients
