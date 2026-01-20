@@ -74,7 +74,7 @@ if [ ! -d shadowsocksr-libev/ ]; then # assume shadowsocksr-libev will never upd
   cd ..
 
   ./autogen.sh
-  CFLAGS+="-fstack-protector" ./configure --disable-documentation --with-ev="$LIBEV_PATH"
+  CFLAGS+="-fstack-protector" ./configure --disable-documentation --with-ev="$LIBEV_PATH" 'CFLAGS=-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration'
 
   # fix codes
   sed -i "s/^const/extern const/g" src/tls.h
