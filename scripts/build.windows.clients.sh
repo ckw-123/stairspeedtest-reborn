@@ -99,7 +99,7 @@ mv trojan.exe ../built/
 cd ..
 
 if [[ "$MSYSTEM" = "MINGW64" ]];then
-    curl -LO https://github.com/v2fly/v2ray-core/releases/latest/download/v2ray-windows-64.zip
+    curl -LO https://github.com/v2fly/v2ray-core/releases/download/v4.45.2/v2ray-windows-64.zip
     curl -LO https://github.com/joewalnes/websocketd/releases/download/v0.4.1/websocketd-0.4.1-windows_amd64.zip
     curl -LO https://github.com/shadowsocks/v2ray-plugin/releases/download/v1.3.1/v2ray-plugin-windows-amd64-v1.3.1.tar.gz
 fi
