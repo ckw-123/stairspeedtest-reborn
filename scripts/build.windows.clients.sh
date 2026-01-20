@@ -85,7 +85,7 @@ else
   # skip all other build steps
 fi
 
-gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ssr-local -fstack-protector -static -lpcre -lssl -lcrypto -lws2_32 -s
+gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ssr-local -fstack-protector -static -lpcre -lssl -lcrypto -lws2_32 -lcrypt32 -s
 mv ssr-local.exe ../built/
 cd ..
 
