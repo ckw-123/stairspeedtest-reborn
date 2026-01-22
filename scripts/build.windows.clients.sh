@@ -92,7 +92,7 @@ cd ..
 if [ ! -d trojan/ ]; then git clone https://github.com/trojan-gfw/trojan --depth=1; fi
 cd trojan
 git pull --ff-only
-cmake -DMYSQL_INCLUDE_DIR="$MINGW_PREFIX/include/mysql" -G "Unix Makefiles" .
+cmake -DENABLE_MYSQL=OFF -G "Unix Makefiles" .
 make -j4
 g++ -o trojan $(find CMakeFiles/trojan.dir/src/ -name "*.obj") -static -lssl -lcrypto -lz -lws2_32 -lwsock32 -lboost_program_options-mt -lcrypt32  -lsecur32 -lshlwapi -lbcrypt -s
 mv trojan.exe ../built/
