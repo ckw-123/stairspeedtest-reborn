@@ -39,13 +39,6 @@ jobs:
         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/FETCH_HEAD') }} # key from git repos
         restore-keys: |
           ${{ runner.os }}-build-${{ env.cache-name }}-
-# --- 修改这里：直接禁用 Trojan 的 MySQL 功能 ---
-    - name: Patch client build script to Disable MySQL
-      run: |
-        # 解释：找到 cmake 命令，在后面插入 -DENABLE_MYSQL=OFF
-        # 这样 Trojan 就不会去链接 mysql、zstd 或 curl 了，彻底解决问题。
-        sed -i 's|cmake -DMYSQL_INCLUDE_DIR|cmake -DENABLE_MYSQL=OFF -DMYSQL_INCLUDE_DIR|' scripts/build.windows.clients.sh
-# --- 原有的运行脚本步骤 ---
     - name: Build dependencies and clients
       run: |
         bash scripts/build.windows.maindeps.sh
