@@ -53,31 +53,45 @@ jobs:
     # =======================================================
     # 【位置正确】在运行编译脚本之前，先修改磁盘上的源代码
     # =======================================================
-    - name: Patch Source Code (Fix OpenSSL 3.x EOF Error in webget.cpp)
+    - name: Global OpenSSL 3.x Patch (The Final Fix)
       run: |
-        TARGET_FILE="src/webget.cpp"
-        
-        # 1. 在第 1 行引入 OpenSSL 头文件
-        sed -i '1i #include <openssl/ssl.h>' "$TARGET_FILE"
+        # 1. 创建全局补丁头文件 src/openssl_patch.h
+        cat <<EOF > src/openssl_patch.h
+        #pragma once
+        #include <openssl/ssl.h>
 
-        # 2. 【关键修正】找到 "static inline void curl_init()" 并在其上方插入回调函数
-        #    这样能确保在此之前 <curl/curl.h> 已经被包含
-        sed -i '/static inline void curl_init()/i \
-        static CURLcode sslctx_function(CURL *curl, void *sslctx, void *parm) {\
-            SSL_CTX *ctx = (SSL_CTX *)sslctx;\
-            /* OpenSSL 3.x 宏定义检查 */ \
-            #ifdef SSL_OP_IGNORE_UNEXPECTED_EOF\
-            SSL_CTX_set_options(ctx, SSL_OP_IGNORE_UNEXPECTED_EOF);\
-            #endif\
-            return CURLE_OK;\
-        }\
-        ' "$TARGET_FILE"
+        // 强制定义 OpenSSL 3.x 的忽略 EOF 选项 (0x80)
+        #ifndef SSL_OP_IGNORE_UNEXPECTED_EOF
+        #define SSL_OP_IGNORE_UNEXPECTED_EOF 0x00000080U
+        #endif
 
-        # 3. 注册回调 (匹配所有 4 处 curl_handle = curl_easy_init();)
-        sed -i '/curl_handle = curl_easy_init();/a \
-        curl_easy_setopt(curl_handle, CURLOPT_SSL_CTX_FUNCTION, sslctx_function);' "$TARGET_FILE"
+        // 【核心劫持逻辑】
+        // 既然代码里用的是原生 OpenSSL，我们拦截 SSL_CTX_new 最有效
+        static inline SSL_CTX* SSL_CTX_new_patched(const SSL_METHOD *meth) {
+            // 1. 调用真正的创建函数
+            SSL_CTX* ctx = SSL_CTX_new(meth);
+            
+            // 2. 拿到句柄后，立即打上“忽略 EOF”的补丁
+            if (ctx) {
+                // 这行代码是消除报错的关键
+                SSL_CTX_set_options(ctx, SSL_OP_IGNORE_UNEXPECTED_EOF);
+            }
+            return ctx;
+        }
+
+        // 【宏替换魔法】
+        // 这一行会让 multithread_test.cpp 里的 SSL_CTX_new 
+        // 变成调用我们的 SSL_CTX_new_patched
+        #undef SSL_CTX_new
+        #define SSL_CTX_new SSL_CTX_new_patched
+        EOF
+
+        # 2. 强制注入到构建系统
+        #    使用 -include 参数，让编译器在编译 multithread_test.cpp 时
+        #    第一件事就是读取我们的补丁。
+        sed -i '/project(.*)/a add_compile_options(-include "${CMAKE_SOURCE_DIR}/src/openssl_patch.h")' CMakeLists.txt
         
-        echo "✅ Patch applied to webget.cpp! SSL EOF error fix injected safely."    
+        echo "✅ Global Hook Installed! OpenSSL EOF check disabled for multithread_test.cpp."
     
     # =======================================================
     # 【开始编译】此时文件已经被上面的步骤修改好了，make 读取的将是新代码
