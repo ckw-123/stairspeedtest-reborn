@@ -53,34 +53,32 @@ jobs:
     # =======================================================
     # 【位置正确】在运行编译脚本之前，先修改磁盘上的源代码
     # =======================================================
-    - name: Patch Source Code (Fix OpenSSL 3.x EOF Error)
+    - name: Patch Source Code (Fix OpenSSL 3.x EOF Error in webget.cpp)
       run: |
-        # 注意：路径通常是 src/webget.cpp，不需要 stairspeedtest 前缀
         TARGET_FILE="src/webget.cpp"
         
-        # 1. 检查文件是否存在 (调试用)
-        ls -l "$TARGET_FILE"
-        
-        # 2. 注入头文件
+        # 1. 在第 1 行引入 OpenSSL 头文件
         sed -i '1i #include <openssl/ssl.h>' "$TARGET_FILE"
-        
-        # 3. 注入回调函数定义
-        sed -i '2a \
+
+        # 2. 【关键修正】找到 "static inline void curl_init()" 并在其上方插入回调函数
+        #    这样能确保在此之前 <curl/curl.h> 已经被包含
+        sed -i '/static inline void curl_init()/i \
         static CURLcode sslctx_function(CURL *curl, void *sslctx, void *parm) {\
             SSL_CTX *ctx = (SSL_CTX *)sslctx;\
+            /* OpenSSL 3.x 宏定义检查 */ \
             #ifdef SSL_OP_IGNORE_UNEXPECTED_EOF\
             SSL_CTX_set_options(ctx, SSL_OP_IGNORE_UNEXPECTED_EOF);\
             #endif\
             return CURLE_OK;\
-        }' "$TARGET_FILE"
+        }\
+        ' "$TARGET_FILE"
 
-        # 4. 注入回调注册代码
-        #    匹配 curl_handle = curl_easy_init();
+        # 3. 注册回调 (匹配所有 4 处 curl_handle = curl_easy_init();)
         sed -i '/curl_handle = curl_easy_init();/a \
         curl_easy_setopt(curl_handle, CURLOPT_SSL_CTX_FUNCTION, sslctx_function);' "$TARGET_FILE"
         
-        echo "✅ Patch applied to $TARGET_FILE"
-
+        echo "✅ Patch applied to webget.cpp! SSL EOF error fix injected safely."    
+    
     # =======================================================
     # 【开始编译】此时文件已经被上面的步骤修改好了，make 读取的将是新代码
     # =======================================================
