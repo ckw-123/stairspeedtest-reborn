@@ -50,49 +50,52 @@ jobs:
       run: |
         rm -rf /mingw64/lib/cmake/CURL
 
-    # =======================================================
-    # 【位置正确】在运行编译脚本之前，先修改磁盘上的源代码
-    # =======================================================
-    - name: Global OpenSSL 3.x Patch (The Final Fix)
+# =======================================================
+# 【位置正确】在运行编译脚本之前，先修改磁盘上的源代码
+# =======================================================
+    - name: Global OpenSSL 3.x Patch (Fix Windows Macro Collision)
       run: |
         # 1. 创建全局补丁头文件 src/openssl_patch.h
         cat <<EOF > src/openssl_patch.h
         #pragma once
+        
+        // 防止 Windows 头文件定义 min/max 宏，避免破坏 std::min/std::max
+        #define NOMINMAX
+        
         #include <openssl/ssl.h>
 
-        // 强制定义 OpenSSL 3.x 的忽略 EOF 选项 (0x80)
+        // 【关键修正】清理 Windows 头文件污染
+        // windows.h 定义了宏 ERROR 为 0，这破坏了 jpcre2.hpp 中的 namespace ERROR
+        #ifdef ERROR
+        #undef ERROR
+        #endif
+
+        // 强制定义 OpenSSL 3.x 的忽略 EOF 选项
         #ifndef SSL_OP_IGNORE_UNEXPECTED_EOF
         #define SSL_OP_IGNORE_UNEXPECTED_EOF 0x00000080U
         #endif
 
-        // 【核心劫持逻辑】
-        // 既然代码里用的是原生 OpenSSL，我们拦截 SSL_CTX_new 最有效
+        // 定义劫持函数
         static inline SSL_CTX* SSL_CTX_new_patched(const SSL_METHOD *meth) {
-            // 1. 调用真正的创建函数
             SSL_CTX* ctx = SSL_CTX_new(meth);
-            
-            // 2. 拿到句柄后，立即打上“忽略 EOF”的补丁
             if (ctx) {
-                // 这行代码是消除报错的关键
                 SSL_CTX_set_options(ctx, SSL_OP_IGNORE_UNEXPECTED_EOF);
             }
             return ctx;
         }
 
-        // 【宏替换魔法】
-        // 这一行会让 multithread_test.cpp 里的 SSL_CTX_new 
-        // 变成调用我们的 SSL_CTX_new_patched
+        // 宏替换魔法
         #undef SSL_CTX_new
         #define SSL_CTX_new SSL_CTX_new_patched
         EOF
 
-        # 2. 强制注入到构建系统
-        #    使用 -include 参数，让编译器在编译 multithread_test.cpp 时
-        #    第一件事就是读取我们的补丁。
+        # 2. 注入到 CMake 构建系统
+        #    如果之前已经注入过，先清除旧的注入代码，防止重复
+        sed -i '/openssl_patch.h/d' CMakeLists.txt
         sed -i '/project(.*)/a add_compile_options(-include "${CMAKE_SOURCE_DIR}/src/openssl_patch.h")' CMakeLists.txt
         
-        echo "✅ Global Hook Installed! OpenSSL EOF check disabled for multithread_test.cpp."
-    
+        echo "✅ Global Hook Installed! Fixed Windows ERROR macro collision."
+
     # =======================================================
     # 【开始编译】此时文件已经被上面的步骤修改好了，make 读取的将是新代码
     # =======================================================
