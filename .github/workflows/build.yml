@@ -12,9 +12,6 @@ jobs:
     defaults:
       run:
         shell: msys2 {0}
-    env:
-        CFLAGS: "-flto=auto -flto-partition=none -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -Wl,--disable-reloc-section,--gc-sections,-static,--strip-all"
-        CXXFLAGS: "-flto=auto -flto-partition=none -ffunction-sections -fdata-sections -fno-rtti -Wl,--disable-reloc-section,--gc-sections,-static,--strip-all"
     steps:
     - uses: actions/checkout@v4
     - uses: msys2/setup-msys2@v2
