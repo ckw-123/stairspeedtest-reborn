@@ -3,7 +3,13 @@ mkdir "$USERPROFILE/maindeps"
 cd "$USERPROFILE/maindeps"
 set -xe
 
-if [ ! -d curl/ ]; then git clone https://github.com/curl/curl --depth=1; fi
+if [ ! -d curl/ ]; then
+    git clone https://github.com/curl/curl \
+        --branch curl-8_18_0 \
+        --depth 1 \
+        --single-branch
+fi
+
 cd curl
 git pull --ff-only
 cmake -DCMAKE_BUILD_TYPE=Release \
