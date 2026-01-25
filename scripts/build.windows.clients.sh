@@ -95,7 +95,7 @@ git pull --ff-only
 # cmake -DENABLE_MYSQL=OFF -G "Unix Makefiles" .
 
 rm -rf build/ CMakeCache.txt CMakeFiles/ cmake_install.cmake Makefile
-grep -E "CMAKE_CXX_FLAGS" CMakeCache.txt
+# grep -E "CMAKE_CXX_FLAGS" CMakeCache.txt
 # 2. 检查环境变量
 echo $CXXFLAGS
 echo $CXX  # 如果有
