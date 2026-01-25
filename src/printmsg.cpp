@@ -15,7 +15,7 @@ struct LOOKUP_ITEM
 
 LOOKUP_ITEM SPEEDTEST_MESSAGES[] =
 {
-    {SPEEDTEST_MESSAGE_EOF, "\nSpeed Test done. Press any key to exit...\n"},
+    {SPEEDTEST_MESSAGE_EOF, "\nSpeed Test done. Press any key to exit..."},
     {SPEEDTEST_MESSAGE_WELCOME, "Welcome to Stair Speedtest " VERSION "!\nWhich stair do you want to test today? (Supports single Shadowsocks/ShadowsocksD/ShadowsocksR/V2Ray link and their subscribe links)\nIf you want to test more than one link, separate them with '|'.\nLink: "},
     {SPEEDTEST_MESSAGE_MULTILINK, "Multiple link provided, parsing all nodes.\n\n"},
     {SPEEDTEST_MESSAGE_FOUNDVMESS, "Found single V2Ray link.\n"},
