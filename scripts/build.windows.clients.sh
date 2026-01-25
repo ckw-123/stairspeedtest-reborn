@@ -93,6 +93,12 @@ if [ ! -d trojan/ ]; then git clone https://github.com/trojan-gfw/trojan --depth
 cd trojan
 git pull --ff-only
 # cmake -DENABLE_MYSQL=OFF -G "Unix Makefiles" .
+
+grep -E "CMAKE_CXX_FLAGS" CMakeCache.txt
+# 2. 检查环境变量
+echo $CXXFLAGS
+echo $CXX  # 如果有
+
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS_RELEASE="-O2 -ffunction-sections -fdata-sections -fno-rtti -Wl,--disable-reloc-section,--gc-sections,-static,--strip-all" -DENABLE_MYSQL=OFF -G "Unix Makefiles" .
 make clean
 make VERBOSE=1 -j4
