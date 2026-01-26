@@ -36,90 +36,27 @@ fi
 gcc $(find src/ -name "obfs_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o simple-obfs -fstack-protector -static -lws2_32 -s
 mv simple-obfs.exe ../built/
 cd ..
-
-rm -rf shadowsocks-libev
-
-
 if [ ! -d shadowsocks-libev/ ]; then
-  git clone https://github.com/shadowsocks/shadowsocks-libev
-  cd shadowsocks-libev
-  git reset --hard c2fc967
-  git submodule update --init
-
-
-# =================================================================
-# 3. 环境变量注入 (关键)
-# =================================================================
-# -DUSE_CRYPTO_OPENSSL: 既然脚本不自动定义这个宏，我们就手动通过 CPPFLAGS 注入它！
-# 这样代码编译时就会自动开启 OpenSSL 分支。
-export CFLAGS="-Os -DNDEBUG -flto"
-export LDFLAGS="-flto"
-export CPPFLAGS="-DUSE_CRYPTO_OPENSSL"
-  
-  ./autogen.sh
-#  ./configure --disable-documentation --with-ev="$LIBEV_PATH"
-
-# =================================================================
-# 5. 【核心黑科技】Patch configure 脚本
-# =================================================================
-# 我们用 sed 修改生成的 configure 文件：
-# 找到报错 "mbed TLS libraries not found" 的地方，把它改成一句无害的 echo。
-# 这样即使检测不到 mbedtls，脚本也不会退出，而是继续执行！
-sed -i 's/as_fn_error \$? "mbed TLS libraries not found."/echo "MbedTLS not found, forcing OpenSSL..."/' configure
-
-# =================================================================
-# 6. 配置 (Cache Trick + Patch)
-# =================================================================
-# 1. 预设 cache 变量为 no，强制让 configure 认为 mbedtls 不存在。
-# 2. 由于我们 Patch 了报错语句，它会“假装”检测失败但继续跑下去。
-# 3. 绝对不要加 --without-mbedtls，避免触发 "no/lib" 路径 Bug。
-export ac_cv_lib_mbedcrypto_mbedtls_cipher_setup=no
-export ac_cv_header_mbedtls_cipher_h=no
-
-./configure \
-  --disable-documentation \
-  --with-ev="$LIBEV_PATH" \
-  --enable-static \
-  --disable-shared \
-  --disable-assert \
-  --disable-ssp \
-  --disable-fast-install \
-  --disable-nftables \
-  --disable-connmarktos
-
-
+    git clone https://github.com/shadowsocks/shadowsocks-libev
+    cd shadowsocks-libev
+    git reset --hard c2fc967
+    git submodule update --init
+    ./autogen.sh
+    ./configure --disable-documentation --with-ev="$LIBEV_PATH"
 else
-  cd shadowsocks-libev
-  # reset fix to avoid fast-forward conflict
-  git checkout -- src/utils.h
-  git pull --ff-only
-  git reset --hard c2fc967
-  git submodule update
-  # skip configure to save some time
+    cd shadowsocks-libev
+    # reset fix to avoid fast-forward conflict
+    git checkout -- src/utils.h
+    git pull --ff-only
+    git reset --hard c2fc967
+    git submodule update
+    # skip configure to save some time
 fi
-
-
 
 # fix codes
 sed -i "s/%I/%z/g" src/utils.h
-
-make -j4
-# gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ss-local -fstack-protector -static -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre -s
-
-
-# =================================================================
-# 8. 链接
-# =================================================================
-# 此时 .o 文件应该已经带有 USE_CRYPTO_OPENSSL 宏了。
-# 链接 OpenSSL 库 (-lssl -lcrypto) 和 Sodium (-lsodium)
-gcc $(find src/ -name "ss_local-*.o") \
-    $(find . -type f -name "*.a" ! -name "*.dll.a" ! -name "*mbed*") \
-    "$LIBEV_PATH/lib/libev.a" \
-    -o ss-local \
-    -Os -flto -static -s \
-    -lws2_32 -lssl -lcrypto -lsodium -lcrypt32 -lpcre
-
-
+make V=1 -j
+gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ss-local -fstack-protector -static -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre -s
 mv ss-local.exe ../built/
 cd ..
 
@@ -134,12 +71,10 @@ if [ ! -d shadowsocksr-libev/ ]; then # assume shadowsocksr-libev will never upd
         --disable-assert \
         --disable-shared \
         --enable-static
-    make -j4
+    make V=1 -j
     cd ..
 
     ./autogen.sh
-#    CFLAGS+="-fstack-protector" ./configure --disable-documentation --with-ev="$LIBEV_PATH" 'CFLAGS=-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration'
-
     CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
     ./configure \
         --disable-assert \
@@ -151,7 +86,7 @@ if [ ! -d shadowsocksr-libev/ ]; then # assume shadowsocksr-libev will never upd
     # fix codes
     sed -i "s/^const/extern const/g" src/tls.h
     sed -i "s/^const/extern const/g" src/http.h
-    make -j4
+    make V=1 -j
 else
     cd shadowsocksr-libev
     # skip all other build steps
