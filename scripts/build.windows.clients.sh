@@ -37,6 +37,9 @@ gcc $(find src/ -name "obfs_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") 
 mv simple-obfs.exe ../built/
 cd ..
 
+rm -rf shadowsocks-libev
+
+
 if [ ! -d shadowsocks-libev/ ]; then
   git clone https://github.com/shadowsocks/shadowsocks-libev
   cd shadowsocks-libev
@@ -54,6 +57,13 @@ else
   # skip configure to save some time
 fi
 
+if grep -q "#define USE_MBEDTLS 1" config.h; then
+    echo "Error: MbedTLS is still selected! Build aborted."
+    exit 1
+fi
+echo "Verified: OpenSSL backend selected."
+
+
 # fix codes
 sed -i "s/%I/%z/g" src/utils.h
 
@@ -64,8 +74,8 @@ gcc $(find src/ -name "ss_local-*.o") \
     $(find . -type f -name "*.a" ! -name "*.dll.a" ! -name "*mbed*") \
     "$LIBEV_PATH/lib/libev.a" \
     -o ss-local \
-    -static -s \
-    -lws2_32 -lssl -lcrypto -lcrypt32 -lpcre
+    -Os -flto -static -s \
+    -lws2_32 -lssl -lcrypto -lsodium -lcrypt32 -lpcre
 
 mv ss-local.exe ../built/
 cd ..
