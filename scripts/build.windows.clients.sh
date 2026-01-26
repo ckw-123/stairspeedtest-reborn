@@ -121,7 +121,10 @@ cmake \
 make clean
 make VERBOSE=1 -j4
 # g++ -o trojan $(find CMakeFiles/trojan.dir/src/ -name "*.obj") -static -lssl -lcrypto -lz -lws2_32 -lwsock32 -lboost_program_options-mt -lcrypt32  -lsecur32 -lshlwapi -lbcrypt -s
-g++ -ffunction-sections -fdata-sections -fno-rtti -Wl,--disable-reloc-section,--gc-sections,-static,--strip-all -o trojan $(find CMakeFiles/trojan.dir/src/ -name "*.obj") -static -lssl -lcrypto -lz -lws2_32 -lwsock32 -lboost_program_options-mt -lcrypt32  -lsecur32 -lshlwapi -lbcrypt -s
+
+# g++ -ffunction-sections -fdata-sections -fno-rtti -Wl,--disable-reloc-section,--gc-sections,-static,--strip-all -o trojan $(find CMakeFiles/trojan.dir/src/ -name "*.obj") -static -lssl -lcrypto -lz -lws2_32 -lwsock32 -lboost_program_options-mt -lcrypt32  -lsecur32 -lshlwapi -lbcrypt -s
+g++ -ffunction-sections -fdata-sections -fno-rtti -Wl,--disable-reloc-section,--gc-sections,-static,--strip-all -o trojan $(find CMakeFiles/trojan.dir/src/ -name "*.obj") -static -lssl -lcrypto -lws2_32 -lwsock32 -lboost_program_options-mt -lcrypt32  -lsecur32 -lshlwapi -lbcrypt -s
+
 mv trojan.exe ../built/
 cd ..
 
