@@ -21,24 +21,6 @@ jobs:
     - name: Add commit id into version
       if: ${{ !startsWith(github.ref, 'refs/tags/') }}
       run: SHA=$(git rev-parse --short HEAD) && sed -i 's/\(v[0-9]\.[0-9]\.[0-9]\)/\1-'"$SHA"'/' src/version.h
-    - name: Cache built dependencies
-      uses: actions/cache@v4
-      env:
-        cache-name: cache-maindeps-64
-      with:
-        path: ~/maindeps
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/FETCH_HEAD') }} # key from git repos
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-    - name: Cache built clients
-      uses: actions/cache@v4
-      env:
-        cache-name: cache-clients-64
-      with:
-        path: ~/clients
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/FETCH_HEAD') }} # key from git repos
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
     - name: Build dependencies and clients
       run: |
         bash scripts/build.windows.maindeps.sh
