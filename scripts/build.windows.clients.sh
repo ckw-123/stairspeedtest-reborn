@@ -46,7 +46,25 @@ if [ ! -d shadowsocks-libev/ ]; then
   git reset --hard c2fc967
   git submodule update --init
   ./autogen.sh
-  ./configure --disable-documentation --with-ev="$LIBEV_PATH"
+#  ./configure --disable-documentation --with-ev="$LIBEV_PATH"
+
+# =================================================================
+# 3. 配置 (关键修改)
+# =================================================================
+# 添加 --without-mbedtls：显式告诉脚本“别去检查 MbedTLS”
+# 这样它就会强制回退到默认的 OpenSSL 逻辑
+./configure \
+  --disable-documentation \
+  --with-ev="$LIBEV_PATH" \
+  --without-mbedtls \
+  --enable-static \
+  --disable-shared \
+  --disable-assert \
+  --disable-ssp \
+  --disable-fast-install \
+  --disable-nftables \
+  --disable-connmarktos
+
 else
   cd shadowsocks-libev
   # reset fix to avoid fast-forward conflict
@@ -57,11 +75,16 @@ else
   # skip configure to save some time
 fi
 
-if grep -q "#define USE_MBEDTLS 1" config.h; then
-    echo "Error: MbedTLS is still selected! Build aborted."
+# =================================================================
+# 4. 验证 (增强版)
+# =================================================================
+# 检查 config.h 是否包含任何 MBEDTLS 字样 (防漏)
+if grep -q "MBEDTLS" config.h; then
+    echo "Error: MbedTLS is STILL selected! Check config.h."
+    grep "MBEDTLS" config.h
     exit 1
 fi
-echo "Verified: OpenSSL backend selected."
+echo "Verified: Clean OpenSSL configuration."
 
 
 # fix codes
