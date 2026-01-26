@@ -45,18 +45,26 @@ if [ ! -d shadowsocks-libev/ ]; then
   cd shadowsocks-libev
   git reset --hard c2fc967
   git submodule update --init
+
+# =================================================================
+# 3. 施法：屏蔽 MbedTLS 自动探测 (关键步骤)
+# =================================================================
+# 我们预先定义这两个检测结果为 "no"，configure 脚本运行到这里时，
+# 会直接读取这两个变量，认为系统里没有 MbedTLS，从而跳过它。
+# 这样我们就不需要传 --without-mbedtls 了，完美避开路径 bug。
+export ac_cv_lib_mbedcrypto_mbedtls_cipher_setup=no
+export ac_cv_header_mbedtls_cipher_h=no
+  
   ./autogen.sh
 #  ./configure --disable-documentation --with-ev="$LIBEV_PATH"
 
 # =================================================================
-# 3. 配置 (关键修改)
+# 4. 配置
 # =================================================================
-# 添加 --without-mbedtls：显式告诉脚本“别去检查 MbedTLS”
-# 这样它就会强制回退到默认的 OpenSSL 逻辑
+# 注意：这里千万别加 --without-mbedtls，也别加 --with-mbedtls
 ./configure \
   --disable-documentation \
   --with-ev="$LIBEV_PATH" \
-  --without-mbedtls \
   --enable-static \
   --disable-shared \
   --disable-assert \
@@ -76,15 +84,15 @@ else
 fi
 
 # =================================================================
-# 4. 验证 (增强版)
+# 5. 二次验证
 # =================================================================
-# 检查 config.h 是否包含任何 MBEDTLS 字样 (防漏)
+# 再次检查 config.h。如果我们的欺骗生效了，里面应该没有任何 MBEDTLS 的定义。
 if grep -q "MBEDTLS" config.h; then
-    echo "Error: MbedTLS is STILL selected! Check config.h."
+    echo "Error: MbedTLS detection failed to be disabled!"
     grep "MBEDTLS" config.h
     exit 1
 fi
-echo "Verified: Clean OpenSSL configuration."
+echo "Verified: MbedTLS disabled via cache injection. OpenSSL selected."
 
 
 # fix codes
