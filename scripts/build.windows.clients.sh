@@ -103,10 +103,6 @@ cd ..
 if [ ! -d trojan/ ]; then git clone https://github.com/trojan-gfw/trojan --depth=1; fi
 cd trojan
 git pull --ff-only
-# cmake -DENABLE_MYSQL=OFF -G "Unix Makefiles" .
-# rm -rf build/ CMakeCache.txt CMakeFiles/ cmake_install.cmake Makefile
-# cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS_RELEASE="-DNDEBUG -O2 -ffunction-sections -fdata-sections -fno-rtti -Wl,--disable-reloc-section,--gc-sections,-static,--strip-all" -DENABLE_MYSQL=OFF -G "Unix Makefiles" .
-
 cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS_RELEASE="-DNDEBUG -O2 -ffunction-sections -fdata-sections -fno-rtti -Wl,--disable-reloc-section,--gc-sections,-static,--strip-all" \
@@ -118,7 +114,6 @@ cmake \
     -G "Unix Makefiles" \
     .
 
-make clean
 make VERBOSE=1 -j
 g++ -ffunction-sections -fdata-sections -fno-rtti -Wl,--disable-reloc-section,--gc-sections,-static,--strip-all -o trojan $(find CMakeFiles/trojan.dir/src/ -name "*.obj") -static -lssl -lcrypto -lws2_32 -lwsock32 -lboost_program_options-mt -lcrypt32  -lsecur32 -lshlwapi -lbcrypt -s
 mv trojan.exe ../built/
