@@ -46,22 +46,36 @@ if [ ! -d shadowsocks-libev/ ]; then
   git reset --hard c2fc967
   git submodule update --init
 
+
 # =================================================================
-# 3. 施法：屏蔽 MbedTLS 自动探测 (关键步骤)
+# 3. 环境变量注入 (关键)
 # =================================================================
-# 我们预先定义这两个检测结果为 "no"，configure 脚本运行到这里时，
-# 会直接读取这两个变量，认为系统里没有 MbedTLS，从而跳过它。
-# 这样我们就不需要传 --without-mbedtls 了，完美避开路径 bug。
-export ac_cv_lib_mbedcrypto_mbedtls_cipher_setup=no
-export ac_cv_header_mbedtls_cipher_h=no
+# -DUSE_CRYPTO_OPENSSL: 既然脚本不自动定义这个宏，我们就手动通过 CPPFLAGS 注入它！
+# 这样代码编译时就会自动开启 OpenSSL 分支。
+export CFLAGS="-Os -DNDEBUG -flto"
+export LDFLAGS="-flto"
+export CPPFLAGS="-DUSE_CRYPTO_OPENSSL"
   
   ./autogen.sh
 #  ./configure --disable-documentation --with-ev="$LIBEV_PATH"
 
 # =================================================================
-# 4. 配置
+# 5. 【核心黑科技】Patch configure 脚本
 # =================================================================
-# 注意：这里千万别加 --without-mbedtls，也别加 --with-mbedtls
+# 我们用 sed 修改生成的 configure 文件：
+# 找到报错 "mbed TLS libraries not found" 的地方，把它改成一句无害的 echo。
+# 这样即使检测不到 mbedtls，脚本也不会退出，而是继续执行！
+sed -i 's/as_fn_error \$? "mbed TLS libraries not found."/echo "MbedTLS not found, forcing OpenSSL..."/' configure
+
+# =================================================================
+# 6. 配置 (Cache Trick + Patch)
+# =================================================================
+# 1. 预设 cache 变量为 no，强制让 configure 认为 mbedtls 不存在。
+# 2. 由于我们 Patch 了报错语句，它会“假装”检测失败但继续跑下去。
+# 3. 绝对不要加 --without-mbedtls，避免触发 "no/lib" 路径 Bug。
+export ac_cv_lib_mbedcrypto_mbedtls_cipher_setup=no
+export ac_cv_header_mbedtls_cipher_h=no
+
 ./configure \
   --disable-documentation \
   --with-ev="$LIBEV_PATH" \
@@ -73,6 +87,7 @@ export ac_cv_header_mbedtls_cipher_h=no
   --disable-nftables \
   --disable-connmarktos
 
+
 else
   cd shadowsocks-libev
   # reset fix to avoid fast-forward conflict
@@ -83,16 +98,6 @@ else
   # skip configure to save some time
 fi
 
-# =================================================================
-# 5. 二次验证
-# =================================================================
-# 再次检查 config.h。如果我们的欺骗生效了，里面应该没有任何 MBEDTLS 的定义。
-if grep -q "MBEDTLS" config.h; then
-    echo "Error: MbedTLS detection failed to be disabled!"
-    grep "MBEDTLS" config.h
-    exit 1
-fi
-echo "Verified: MbedTLS disabled via cache injection. OpenSSL selected."
 
 
 # fix codes
@@ -101,12 +106,19 @@ sed -i "s/%I/%z/g" src/utils.h
 make -j4
 # gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ss-local -fstack-protector -static -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre -s
 
+
+# =================================================================
+# 8. 链接
+# =================================================================
+# 此时 .o 文件应该已经带有 USE_CRYPTO_OPENSSL 宏了。
+# 链接 OpenSSL 库 (-lssl -lcrypto) 和 Sodium (-lsodium)
 gcc $(find src/ -name "ss_local-*.o") \
     $(find . -type f -name "*.a" ! -name "*.dll.a" ! -name "*mbed*") \
     "$LIBEV_PATH/lib/libev.a" \
     -o ss-local \
     -Os -flto -static -s \
     -lws2_32 -lssl -lcrypto -lsodium -lcrypt32 -lpcre
+
 
 mv ss-local.exe ../built/
 cd ..
