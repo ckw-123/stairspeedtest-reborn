@@ -63,29 +63,40 @@ mv ss-local.exe ../built/
 cd ..
 
 if [ ! -d shadowsocksr-libev/ ]; then # assume shadowsocksr-libev will never update again
-  git clone -b Akkariiin/develop --single-branch --depth=1 https://github.com/shadowsocksrr/shadowsocksr-libev
-  cd shadowsocksr-libev
+    git clone -b Akkariiin/develop --single-branch --depth=1 https://github.com/shadowsocksrr/shadowsocksr-libev
+    cd shadowsocksr-libev
 
-  # build ahead to reconfigure
-  cd libudns
-  ./autogen.sh
-  ./configure
-  make -j4
-  cd ..
+    # build ahead to reconfigure
+    cd libudns
+    ./autogen.sh
+    ./configure \
+        --disable-assert \
+        --disable-shared \
+        --enable-static
+    make -j4
+    cd ..
 
-  ./autogen.sh
-  CFLAGS+="-fstack-protector" ./configure --disable-documentation --with-ev="$LIBEV_PATH" 'CFLAGS=-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration'
+    ./autogen.sh
+#    CFLAGS+="-fstack-protector" ./configure --disable-documentation --with-ev="$LIBEV_PATH" 'CFLAGS=-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration'
 
-  # fix codes
-  sed -i "s/^const/extern const/g" src/tls.h
-  sed -i "s/^const/extern const/g" src/http.h
-  make -j4
+    CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
+    ./configure \
+        --disable-assert \
+        --disable-documentation \
+        --disable-ssp \
+        --disable-zlib \
+        --with-ev="$LIBEV_PATH"
+
+    # fix codes
+    sed -i "s/^const/extern const/g" src/tls.h
+    sed -i "s/^const/extern const/g" src/http.h
+    make -j4
 else
-  cd shadowsocksr-libev
-  # skip all other build steps
+    cd shadowsocksr-libev
+    # skip all other build steps
 fi
 
-gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ssr-local -fstack-protector -static -lpcre -lssl -lcrypto -lws2_32 -lcrypt32 -s
+gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ssr-local -static -lpcre -lssl -lcrypto -lws2_32 -lcrypt32 -s
 mv ssr-local.exe ../built/
 cd ..
 
