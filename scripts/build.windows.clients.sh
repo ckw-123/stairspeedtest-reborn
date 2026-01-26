@@ -58,7 +58,15 @@ fi
 sed -i "s/%I/%z/g" src/utils.h
 
 make -j4
-gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ss-local -fstack-protector -static -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre -s
+# gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ss-local -fstack-protector -static -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre -s
+
+gcc $(find src/ -name "ss_local-*.o") \
+    $(find . -type f -name "*.a" ! -name "*.dll.a" ! -name "*mbed*") \
+    "$LIBEV_PATH/lib/libev.a" \
+    -o ss-local \
+    -static -s \
+    -lws2_32 -lssl -lcrypto -lcrypt32 -lpcre
+
 mv ss-local.exe ../built/
 cd ..
 
