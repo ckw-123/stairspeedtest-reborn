@@ -7,19 +7,35 @@ set -xe
 if [ ! -d mbedtls/ ]; then git clone https://github.com/Mbed-TLS/mbedtls --branch v2.28.10 --depth=1; fi
 cd mbedtls
 git pull --ff-only
-cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_BUILD_TYPE=Release -DENABLE_PROGRAMS=OFF -DENABLE_TESTING=OFF -DMBEDTLS_FATAL_WARNINGS=OFF -DUSE_STATIC_MBEDTLS_LIBRARY=ON -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" -G "Unix Makefiles" .
-make install -j4
+cmake \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DENABLE_PROGRAMS=OFF \
+    -DENABLE_TESTING=OFF \
+    -DMBEDTLS_FATAL_WARNINGS=OFF \
+    -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" \
+    -G "Unix Makefiles" \
+    .
+
+make VERBOSE=1 install -j
 cd ..
 
 if [ ! -d libev-mingw/ ]; then # assume libev-mingw will never update again
-  curl -LO https://github.com/shadowsocks/libev/archive/mingw.tar.gz
-  tar xvf mingw.tar.gz
-  cd libev-mingw
-  mkdir build
-  ./configure --prefix="$PWD/build" CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion"
-  make install -j4
-  cd ..
+    curl -LO https://github.com/shadowsocks/libev/archive/mingw.tar.gz
+    tar xvf mingw.tar.gz
+    cd libev-mingw
+    mkdir build
+    CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion" \
+    ./configure \
+        --disable-silent-rules \
+        --disable-shared \
+        --enable-static \
+        --prefix="$PWD/build"
+  
+    make install -j
+    cd ..
 fi
+
 export LIBEV_PATH="$PWD/libev-mingw/build"
 
 if [ ! -d simple-obfs/ ]; then # assume simple-obfs will never update again
