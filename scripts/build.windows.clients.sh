@@ -23,26 +23,45 @@ fi
 export LIBEV_PATH="$PWD/libev-mingw/build"
 
 if [ ! -d simple-obfs/ ]; then # assume simple-obfs will never update again
-  git clone https://github.com/shadowsocks/simple-obfs --depth=1
-  cd simple-obfs
-  git submodule update --init
-  ./autogen.sh
-  ./configure --disable-documentation --with-ev="$LIBEV_PATH" 'CFLAGS=-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration'
-  make -j4
+    git clone https://github.com/shadowsocks/simple-obfs --depth=1
+    cd simple-obfs
+    git submodule update --init
+    ./autogen.sh
+    CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
+    ./configure \
+        --disable-assert \
+        --disable-documentation \
+        --disable-shared \
+        --disable-silent-rules \
+        --disable-ssp \
+        --enable-static \
+        --with-ev="$LIBEV_PATH"
+
+    make -j
 else
-  cd simple-obfs
+    cd simple-obfs
 fi
 
 gcc $(find src/ -name "obfs_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o simple-obfs -fstack-protector -static -lws2_32 -s
 mv simple-obfs.exe ../built/
 cd ..
+
 if [ ! -d shadowsocks-libev/ ]; then
     git clone https://github.com/shadowsocks/shadowsocks-libev
     cd shadowsocks-libev
     git reset --hard c2fc967
     git submodule update --init
     ./autogen.sh
-    ./configure --disable-documentation --with-ev="$LIBEV_PATH"
+    ./configure \
+        --disable-assert \
+        --disable-connmarktos \
+        --disable-documentation \
+        --disable-nftables \
+        --disable-shared \
+        --disable-silent-rules \
+        --disable-ssp \
+        --enable-static \
+        --with-ev="$LIBEV_PATH"
 else
     cd shadowsocks-libev
     # reset fix to avoid fast-forward conflict
@@ -55,7 +74,7 @@ fi
 
 # fix codes
 sed -i "s/%I/%z/g" src/utils.h
-make V=1 -j
+make -j
 gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ss-local -fstack-protector -static -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre -s
 mv ss-local.exe ../built/
 cd ..
@@ -69,9 +88,10 @@ if [ ! -d shadowsocksr-libev/ ]; then # assume shadowsocksr-libev will never upd
     ./autogen.sh
     ./configure \
         --disable-assert \
+        --disable-silent-rules \
         --disable-shared \
         --enable-static
-    make V=1 -j
+    make -j
     cd ..
 
     ./autogen.sh
@@ -79,14 +99,16 @@ if [ ! -d shadowsocksr-libev/ ]; then # assume shadowsocksr-libev will never upd
     ./configure \
         --disable-assert \
         --disable-documentation \
+        --disable-shared \
+        --disable-silent-rules \
         --disable-ssp \
         --disable-zlib \
-        --with-ev="$LIBEV_PATH"
+        --enable-static
 
     # fix codes
     sed -i "s/^const/extern const/g" src/tls.h
     sed -i "s/^const/extern const/g" src/http.h
-    make V=1 -j
+    make -j
 else
     cd shadowsocksr-libev
     # skip all other build steps
