@@ -12,8 +12,8 @@ fi
 
 cd curl
 git pull --ff-only
-
-cmake -DCMAKE_BUILD_TYPE=Release \
+cmake \
+    -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_CURL_EXE=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" \
@@ -60,28 +60,37 @@ cmake -DCMAKE_BUILD_TYPE=Release \
     -DCURL_DISABLE_WEBSOCKETS=ON \
     .
 
-make install -j4
+make VERBOSE=1 install -j
 cd ..
 
 if [ ! -d yaml-cpp/ ]; then git clone https://github.com/jbeder/yaml-cpp --depth=1; fi
 cd yaml-cpp
 git pull --ff-only
-cmake -DCMAKE_BUILD_TYPE=Release -DYAML_CPP_BUILD_TESTS=OFF -DYAML_CPP_BUILD_TOOLS=OFF -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" -G "Unix Makefiles" .
-make install -j4
+cmake \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" \
+    -DBUILD_TESTING=OFF \
+    -DYAML_CPP_BUILD_CONTRIB=OFF \
+    -DYAML_CPP_BUILD_TOOLS=OFF \
+    -DYAML_ENABLE_PIC=OFF \
+    -G "Unix Makefiles" \
+    .
+
+make VERBOSE=1 install -j
 cd ..
 
 if [ ! -d rapidjson/ ]; then git clone https://github.com/Tencent/rapidjson --depth=1; fi
 cd rapidjson
 git pull --ff-only
 cmake -DRAPIDJSON_BUILD_DOC=OFF -DRAPIDJSON_BUILD_EXAMPLES=OFF -DRAPIDJSON_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" -G "Unix Makefiles" .
-make install -j4
+make VERBOSE=1 install -j
 cd ..
 
 if [ ! -d pngwriter/ ]; then git clone https://github.com/pngwriter/pngwriter --depth=1; fi
 cd pngwriter
 git pull --ff-only
 cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" -G "Unix Makefiles" .
-make install -j4
+make VERBOSE=1 install -j
 cd ..
 
 set +xe
