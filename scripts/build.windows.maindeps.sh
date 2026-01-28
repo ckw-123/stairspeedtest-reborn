@@ -3,13 +3,7 @@ mkdir "$USERPROFILE/maindeps"
 cd "$USERPROFILE/maindeps"
 set -xe
 
-if [ ! -d curl/ ]; then
-    git clone https://github.com/curl/curl \
-        --branch curl-8_18_0 \
-        --depth 1 \
-        --single-branch
-fi
-
+git clone https://github.com/curl/curl --branch curl-8_18_0 --single-branch --depth 1
 cd curl
 git pull --ff-only
 cmake \
@@ -63,7 +57,7 @@ cmake \
 make VERBOSE=1 install -j
 cd ..
 
-if [ ! -d yaml-cpp/ ]; then git clone https://github.com/jbeder/yaml-cpp --depth=1; fi
+git clone https://github.com/jbeder/yaml-cpp --depth=1
 cd yaml-cpp
 git pull --ff-only
 cmake \
@@ -79,20 +73,23 @@ cmake \
 make VERBOSE=1 install -j
 cd ..
 
-if [ ! -d rapidjson/ ]; then git clone https://github.com/Tencent/rapidjson --depth=1; fi
+git clone https://github.com/Tencent/rapidjson --depth=1
 cd rapidjson
 git pull --ff-only
 cmake \
 -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" \
 -G "Unix Makefiles" \
+-DBUILD_TESTING=OFF \
+-DRAPIDJSON_BUILD_DOC=OFF \
 -DRAPIDJSON_BUILD_EXAMPLES=OFF \
+-DRAPIDJSON_BUILD_TESTS=OFF \
 -DRAPIDJSON_ENABLE_INSTRUMENTATION_OPT=OFF \
 .
 
 make VERBOSE=1 install -j
 cd ..
 
-if [ ! -d pngwriter/ ]; then git clone https://github.com/pngwriter/pngwriter --depth=1; fi
+git clone https://github.com/pngwriter/pngwriter --branch dev --single-branch --depth=1
 cd pngwriter
 git pull --ff-only
 cmake \
