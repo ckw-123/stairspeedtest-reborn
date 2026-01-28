@@ -6,7 +6,6 @@ set -xe
 
 git clone --branch v2.28.10 --depth=1 https://github.com/Mbed-TLS/mbedtls
 cd mbedtls
-git pull --ff-only
 cmake \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     -DCMAKE_BUILD_TYPE=Release \
