@@ -134,7 +134,7 @@ gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$
 mv ssr-local.exe ../built/
 cd ..
 
-if [ ! -d trojan/ ]; then git clone https://github.com/trojan-gfw/trojan --depth=1; fi
+if [ ! -d trojan/ ]; then git clone https://github.com/trojan-gfw/trojan --branch dev --single-branch --depth=1; fi
 cd trojan
 git pull --ff-only
 cmake \
