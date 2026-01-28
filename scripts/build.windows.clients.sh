@@ -37,7 +37,7 @@ export LIBEV_PATH="$PWD/libev-mingw/build"
 
 git clone --depth=1 https://github.com/shadowsocks/simple-obfs
 cd simple-obfs
-git submodule update --init
+git submodule update --init --depth=1
 ./autogen.sh
 CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
 ./configure \
@@ -55,10 +55,10 @@ gcc $(find src/ -name "obfs_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") 
 mv simple-obfs.exe ../built/
 cd ..
 
-git clone https://github.com/shadowsocks/shadowsocks-libev
+git clone --filter=blob:none https://github.com/shadowsocks/shadowsocks-libev
 cd shadowsocks-libev
-git reset --hard c2fc967
-git submodule update --init
+git checkout --detach c2fc967
+git submodule update --init --recursive
 ./autogen.sh
 ./configure \
         --disable-assert \
