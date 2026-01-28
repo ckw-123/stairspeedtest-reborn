@@ -4,7 +4,7 @@ mkdir "$USERPROFILE/clients/built"
 cd "$USERPROFILE/clients"
 set -xe
 
-if [ ! -d mbedtls/ ]; then git clone https://github.com/Mbed-TLS/mbedtls --branch v2.28.10 --depth=1; fi
+git clone --branch v2.28.10 --depth=1 https://github.com/Mbed-TLS/mbedtls
 cd mbedtls
 git pull --ff-only
 cmake \
@@ -20,55 +20,48 @@ cmake \
 make VERBOSE=1 install -j
 cd ..
 
-if [ ! -d libev-mingw/ ]; then # assume libev-mingw will never update again
-    curl -LO https://github.com/shadowsocks/libev/archive/mingw.tar.gz
-    tar xvf mingw.tar.gz
-    cd libev-mingw
-    mkdir build
-    CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion" \
-    ./configure \
-        --disable-silent-rules \
-        --disable-shared \
-        --enable-static \
-        --prefix="$PWD/build"
+curl -LO https://github.com/shadowsocks/libev/archive/mingw.tar.gz
+tar xvf mingw.tar.gz
+cd libev-mingw
+mkdir build
+CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion" \
+./configure \
+    --disable-silent-rules \
+    --disable-shared \
+    --enable-static \
+    --prefix="$PWD/build"
   
-    make install -j
-    cd ..
-fi
+make install -j
+cd ..
 
 export LIBEV_PATH="$PWD/libev-mingw/build"
 
-if [ ! -d simple-obfs/ ]; then # assume simple-obfs will never update again
-    git clone https://github.com/shadowsocks/simple-obfs --depth=1
-    cd simple-obfs
-    git submodule update --init
-    ./autogen.sh
-    CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
-    ./configure \
-        --disable-assert \
-        --disable-documentation \
-        --disable-shared \
-        --disable-silent-rules \
-        --disable-ssp \
-        --enable-static \
-        --with-ev="$LIBEV_PATH"
+git clone --depth=1 https://github.com/shadowsocks/simple-obfs
+cd simple-obfs
+git submodule update --init
+./autogen.sh
+CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
+./configure \
+    --disable-assert \
+    --disable-documentation \
+    --disable-shared \
+    --disable-silent-rules \
+    --disable-ssp \
+    --enable-static \
+    --with-ev="$LIBEV_PATH"
 
-    make -j
-else
-    cd simple-obfs
-fi
+make -j
 
 gcc $(find src/ -name "obfs_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o simple-obfs -fstack-protector -static -lws2_32 -s
 mv simple-obfs.exe ../built/
 cd ..
 
-if [ ! -d shadowsocks-libev/ ]; then
-    git clone https://github.com/shadowsocks/shadowsocks-libev
-    cd shadowsocks-libev
-    git reset --hard c2fc967
-    git submodule update --init
-    ./autogen.sh
-    ./configure \
+git clone https://github.com/shadowsocks/shadowsocks-libev
+cd shadowsocks-libev
+git reset --hard c2fc967
+git submodule update --init
+./autogen.sh
+./configure \
         --disable-assert \
         --disable-connmarktos \
         --disable-documentation \
@@ -78,15 +71,6 @@ if [ ! -d shadowsocks-libev/ ]; then
         --disable-ssp \
         --enable-static \
         --with-ev="$LIBEV_PATH"
-else
-    cd shadowsocks-libev
-    # reset fix to avoid fast-forward conflict
-    git checkout -- src/utils.h
-    git pull --ff-only
-    git reset --hard c2fc967
-    git submodule update
-    # skip configure to save some time
-fi
 
 # fix codes
 sed -i "s/%I/%z/g" src/utils.h
@@ -95,48 +79,40 @@ gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$
 mv ss-local.exe ../built/
 cd ..
 
-if [ ! -d shadowsocksr-libev/ ]; then # assume shadowsocksr-libev will never update again
-    git clone -b Akkariiin/develop --single-branch --depth=1 https://github.com/shadowsocksrr/shadowsocksr-libev
-    cd shadowsocksr-libev
+git clone --branch Akkariiin/develop --single-branch --depth=1 https://github.com/shadowsocksrr/shadowsocksr-libev
+cd shadowsocksr-libev
 
-    # build ahead to reconfigure
-    cd libudns
-    ./autogen.sh
-    ./configure \
-        --disable-assert \
-        --disable-silent-rules \
-        --disable-shared \
-        --enable-static
-    make -j
-    cd ..
+# build ahead to reconfigure
+cd libudns
+./configure \
+    --disable-assert \
+    --disable-silent-rules \
+    --disable-shared \
+    --enable-static
+make -j
+cd ..
 
-    ./autogen.sh
-    CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
-    ./configure \
-        --disable-assert \
-        --disable-documentation \
-        --disable-shared \
-        --disable-silent-rules \
-        --disable-ssp \
-        --disable-zlib \
-        --enable-static
+CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
+./configure \
+    --disable-assert \
+    --disable-documentation \
+    --disable-shared \
+    --disable-silent-rules \
+    --disable-ssp \
+    --disable-zlib \
+    --enable-static
 
-    # fix codes
-    sed -i "s/^const/extern const/g" src/tls.h
-    sed -i "s/^const/extern const/g" src/http.h
-    make -j
-else
-    cd shadowsocksr-libev
-    # skip all other build steps
-fi
+# fix codes
+sed -i "s/^const/extern const/g" src/tls.h
+sed -i "s/^const/extern const/g" src/http.h
+make -j
 
 gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ssr-local -static -lpcre -lssl -lcrypto -lws2_32 -lcrypt32 -s
 mv ssr-local.exe ../built/
 cd ..
 
-if [ ! -d trojan/ ]; then git clone https://github.com/trojan-gfw/trojan --branch dev --single-branch --depth=1; fi
+git clone --branch dev --single-branch --depth=1 https://github.com/trojan-gfw/trojan
 cd trojan
-git pull --ff-only
 cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS_RELEASE="-DNDEBUG -O2 -ffunction-sections -fdata-sections -fno-rtti -Wl,--disable-reloc-section,--gc-sections,-static,--strip-all" \
