@@ -4,7 +4,7 @@ mkdir "$USERPROFILE/clients/built"
 cd "$USERPROFILE/clients"
 set -xe
 
-git clone --branch v2.28.10 --depth=1 https://github.com/Mbed-TLS/mbedtls
+git clone --branch v2.28.10 --depth 1 https://github.com/Mbed-TLS/mbedtls
 cd mbedtls
 cmake \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
@@ -35,9 +35,9 @@ cd ..
 
 export LIBEV_PATH="$PWD/libev-mingw/build"
 
-git clone --depth=1 https://github.com/shadowsocks/simple-obfs
+git clone --depth 1 https://github.com/shadowsocks/simple-obfs
 cd simple-obfs
-git submodule update --init --depth=1
+git submodule update --init --depth 1
 ./autogen.sh
 CFLAGS="-O2 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
 ./configure \
@@ -78,7 +78,7 @@ gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$
 mv ss-local.exe ../built/
 cd ..
 
-git clone --branch Akkariiin/develop --single-branch --depth=1 https://github.com/shadowsocksrr/shadowsocksr-libev
+git clone --branch Akkariiin/develop --single-branch --depth 1 https://github.com/shadowsocksrr/shadowsocksr-libev
 cd shadowsocksr-libev
 
 # build ahead to reconfigure
@@ -110,7 +110,7 @@ gcc $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$
 mv ssr-local.exe ../built/
 cd ..
 
-git clone --branch dev --single-branch --depth=1 https://github.com/trojan-gfw/trojan
+git clone --branch dev --single-branch --depth 1 https://github.com/trojan-gfw/trojan
 cd trojan
 cmake \
     -DCMAKE_BUILD_TYPE=Release \
