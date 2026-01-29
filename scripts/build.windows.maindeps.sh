@@ -7,6 +7,7 @@ git clone --branch curl-8_18_0 --single-branch --depth 1 https://github.com/curl
 cd curl
 cmake \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG $CFLAGS" \
     -DBUILD_CURL_EXE=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" \
