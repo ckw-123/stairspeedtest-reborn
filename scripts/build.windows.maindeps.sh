@@ -3,9 +3,8 @@ mkdir "$USERPROFILE/maindeps"
 cd "$USERPROFILE/maindeps"
 set -xe
 
-git clone https://github.com/curl/curl --branch curl-8_18_0 --single-branch --depth 1
+git clone --branch curl-8_18_0 --single-branch --depth 1 https://github.com/curl/curl
 cd curl
-git pull --ff-only
 cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_CURL_EXE=OFF \
@@ -57,9 +56,8 @@ cmake \
 make VERBOSE=1 install -j
 cd ..
 
-git clone https://github.com/jbeder/yaml-cpp --depth=1
+git clone --depth 1 https://github.com/jbeder/yaml-cpp
 cd yaml-cpp
-git pull --ff-only
 cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" \
@@ -73,9 +71,8 @@ cmake \
 make VERBOSE=1 install -j
 cd ..
 
-git clone https://github.com/Tencent/rapidjson --depth=1
+git clone --depth 1 https://github.com/Tencent/rapidjson
 cd rapidjson
-git pull --ff-only
 cmake \
 -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" \
 -G "Unix Makefiles" \
@@ -89,9 +86,8 @@ cmake \
 make VERBOSE=1 install -j
 cd ..
 
-git clone https://github.com/pngwriter/pngwriter --branch dev --single-branch --depth=1
+git clone --branch dev --single-branch --depth 1 https://github.com/pngwriter/pngwriter
 cd pngwriter
-git pull --ff-only
 cmake \
 -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" \
 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
