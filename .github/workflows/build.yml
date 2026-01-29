@@ -12,6 +12,13 @@ jobs:
     defaults:
       run:
         shell: msys2 {0}
+    env:
+      common_flags: "-ffunction-sections -fdata-sections"
+      common_cflags: "$common_flags -fno-asynchronous-unwind-tables"
+      common_cxxflags: "$common_flags -fno-rtti"
+      CFLAGS: "-Os $common_cflags"
+      CXXFLAGS: "-Os $common_cxxflags"
+      LDFLAGS: "-Wl,--disable-reloc-section,--gc-sections,--strip-all"
     steps:
     - uses: actions/checkout@v4
     - uses: msys2/setup-msys2@v2
