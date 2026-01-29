@@ -23,7 +23,7 @@ jobs:
       run: SHA=$(git rev-parse --short HEAD) && sed -i 's/\(v[0-9]\.[0-9]\.[0-9]\)/\1-'"$SHA"'/' src/version.h
     - name: Initialize Optimized Flags
       run: |
-        common_flags="-Os -ffunction-sections -fdata-sections"
+        common_flags="-DNDEBUG -Os -ffunction-sections -fdata-sections"
         common_cflags="$common_flags -fno-asynchronous-unwind-tables"
         common_cxxflags="$common_flags -fno-rtti"
         echo "C_FLAGS=$common_cflags" >> $GITHUB_ENV
