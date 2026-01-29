@@ -26,9 +26,9 @@ jobs:
         common_flags="-Os -ffunction-sections -fdata-sections"
         common_cflags="$common_flags -fno-asynchronous-unwind-tables"
         common_cxxflags="$common_flags -fno-rtti"
-        echo "CFLAGS=$common_cflags" >> $GITHUB_ENV
-        echo "CXXFLAGS=$common_cxxflags" >> $GITHUB_ENV
-        echo "LDFLAGS=-Wl,--disable-reloc-section,--gc-sections,--strip-all" >> $GITHUB_ENV
+        echo "C_FLAGS=$common_cflags" >> $GITHUB_ENV
+        echo "CXX_FLAGS=$common_cxxflags" >> $GITHUB_ENV
+        echo "LD_FLAGS=-Wl,--disable-reloc-section,--gc-sections,--strip-all" >> $GITHUB_ENV
     - name: Build dependencies and clients
       run: |
         bash scripts/build.windows.maindeps.sh
