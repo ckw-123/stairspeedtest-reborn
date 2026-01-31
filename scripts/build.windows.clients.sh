@@ -9,7 +9,7 @@ cd mbedtls
 cmake \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_C_FLAGS_RELEASE="$C_FLAGS" \
+    -DCMAKE_C_FLAGS_RELEASE="$C_FLAGS -flto=auto -flto-partition=none" \
     -DENABLE_PROGRAMS=OFF \
     -DENABLE_TESTING=OFF \
     -DMBEDTLS_FATAL_WARNINGS=OFF \
@@ -76,7 +76,7 @@ CFLAGS="$C_FLAGS" \
 # fix codes
 sed -i "s/%I/%z/g" src/utils.h
 make -j
-gcc $LD_FLAGS $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ss-local -static -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre
+gcc $C_FLAGS -flto=auto -flto-partition=none $LD_FLAGS $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ss-local -static -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre
 mv ss-local.exe ../built/
 cd ..
 
@@ -117,7 +117,7 @@ git clone --branch dev --single-branch --depth 1 https://github.com/trojan-gfw/t
 cd trojan
 cmake \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS_RELEASE="$CXX_FLAGS -fno-exceptions" \
+    -DCMAKE_CXX_FLAGS_RELEASE="$CXX_FLAGS" \
     -DENABLE_MYSQL=OFF \
     -DENABLE_NAT=OFF \
     -DENABLE_REUSE_PORT=OFF \
