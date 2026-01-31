@@ -117,7 +117,7 @@ git clone --branch dev --single-branch --depth 1 https://github.com/trojan-gfw/t
 cd trojan
 cmake \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS_RELEASE="$CXX_FLAGS" \
+    -DCMAKE_CXX_FLAGS_RELEASE="$CXX_FLAGS -fno-exceptions" \
     -DENABLE_MYSQL=OFF \
     -DENABLE_NAT=OFF \
     -DENABLE_REUSE_PORT=OFF \
