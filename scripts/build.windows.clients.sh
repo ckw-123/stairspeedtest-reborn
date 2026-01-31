@@ -90,7 +90,7 @@ cd shadowsocksr-libev
 
 # build ahead to reconfigure
 cd libudns
-CFLAGS="$C_FLAGS" \
+CFLAGS="$C_FLAGS -flto=auto -flto-partition=none" \
 ./configure \
     --disable-assert \
     --disable-silent-rules \
@@ -99,7 +99,7 @@ CFLAGS="$C_FLAGS" \
 make -j
 cd ..
 
-CFLAGS="$C_FLAGS -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
+CFLAGS="$C_FLAGS -flto=auto -flto-partition=none -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
 ./configure \
     --disable-assert \
     --disable-documentation \
@@ -114,7 +114,7 @@ sed -i "s/^const/extern const/g" src/tls.h
 sed -i "s/^const/extern const/g" src/http.h
 make -j
 
-gcc $LD_FLAGS $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ssr-local -static -lpcre -lssl -lcrypto -lws2_32 -lcrypt32
+gcc $C_FLAGS -flto=auto -flto-partition=none $LD_FLAGS $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ssr-local -static -lpcre -lssl -lcrypto -lws2_32 -lcrypt32
 mv ssr-local.exe ../built/
 cd ..
 
