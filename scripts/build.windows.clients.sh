@@ -29,7 +29,7 @@ curl -LO https://github.com/shadowsocks/libev/archive/mingw.tar.gz
 tar xvf mingw.tar.gz
 cd libev-mingw
 mkdir build
-CFLAGS="$C_FLAGS -Wno-error=incompatible-pointer-types -Wno-error=int-conversion" \
+CFLAGS="$C_FLAGS -flto=auto -flto-partition=none -Wno-error=incompatible-pointer-types -Wno-error=int-conversion" \
 ./configure \
     --disable-silent-rules \
     --disable-shared \
@@ -45,7 +45,7 @@ git clone --depth 1 https://github.com/shadowsocks/simple-obfs
 cd simple-obfs
 git submodule update --init --depth 1
 ./autogen.sh
-CFLAGS="$C_FLAGS -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
+CFLAGS="$C_FLAGS -flto=auto -flto-partition=none -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
 ./configure \
     --disable-assert \
     --disable-documentation \
@@ -57,7 +57,7 @@ CFLAGS="$C_FLAGS -Wno-error=incompatible-pointer-types -Wno-error=int-conversion
 
 make -j
 
-gcc $LD_FLAGS $(find src/ -name "obfs_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o simple-obfs -static -lws2_32
+gcc $C_FLAGS -flto=auto -flto-partition=none $LD_FLAGS $(find src/ -name "obfs_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o simple-obfs -static -lws2_32
 mv simple-obfs.exe ../built/
 cd ..
 
@@ -66,7 +66,7 @@ cd shadowsocks-libev
 git checkout --detach c2fc967
 git submodule update --init --recursive
 ./autogen.sh
-CFLAGS="$C_FLAGS" \
+CFLAGS="$C_FLAGS -flto=auto -flto-partition=none" \
 ./configure \
         --disable-assert \
         --disable-connmarktos \
