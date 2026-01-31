@@ -4,12 +4,17 @@ mkdir "$USERPROFILE/clients/built"
 cd "$USERPROFILE/clients"
 set -xe
 
+
+export AR=gcc-ar.exe
+export RANLIB=gcc-ranlib.exe
+
+
 git clone --branch v2.28.10 --depth 1 https://github.com/Mbed-TLS/mbedtls
 cd mbedtls
 cmake \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_C_FLAGS_RELEASE="$C_FLAGS -flto=auto -flto-partition=none" \
+    -DCMAKE_BUILD_TYPE=MinSizeRel \
+    -DCMAKE_C_FLAGS_MINSIZEREL="$C_FLAGS -flto=auto -flto-partition=none" \
     -DENABLE_PROGRAMS=OFF \
     -DENABLE_TESTING=OFF \
     -DMBEDTLS_FATAL_WARNINGS=OFF \
