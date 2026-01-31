@@ -122,7 +122,7 @@ git clone --branch dev --single-branch --depth 1 https://github.com/trojan-gfw/t
 cd trojan
 cmake \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS_RELEASE="$CXX_FLAGS" \
+    -DCMAKE_CXX_FLAGS_RELEASE="$CXX_FLAGS -flto=auto -flto-partition=none" \
     -DENABLE_MYSQL=OFF \
     -DENABLE_NAT=OFF \
     -DENABLE_REUSE_PORT=OFF \
@@ -132,7 +132,7 @@ cmake \
     .
 
 make VERBOSE=1 -j
-g++ $LD_FLAGS -o trojan $(find CMakeFiles/trojan.dir/src/ -name "*.obj") -static -lssl -lcrypto -lws2_32 -lwsock32 -lboost_program_options-mt -lcrypt32  -lsecur32 -lshlwapi -lbcrypt
+g++ $CXX_FLAGS -flto=auto -flto-partition=none $LD_FLAGS -o trojan $(find CMakeFiles/trojan.dir/src/ -name "*.obj") -static -lssl -lcrypto -lws2_32 -lwsock32 -lboost_program_options-mt -lcrypt32  -lsecur32 -lshlwapi -lbcrypt
 mv trojan.exe ../built/
 cd ..
 
