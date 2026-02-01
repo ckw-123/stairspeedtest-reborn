@@ -56,10 +56,14 @@ gcc $LD_C_LTO_FLAGS $(find src/ -name "obfs_local-*.o") $(find . -name "*.a" ! -
 mv simple-obfs.exe ../built/
 cd ..
 
-git clone --filter=blob:none https://github.com/shadowsocks/shadowsocks-libev
+# git clone --filter=blob:none https://github.com/shadowsocks/shadowsocks-libev
+# cd shadowsocks-libev
+# git checkout --detach c2fc967
+# git submodule update --init --recursive
+
+git clone --depth 1 --filter=blob:none --recursive https://github.com/shadowsocks/shadowsocks-libev
 cd shadowsocks-libev
-git checkout --detach c2fc967
-git submodule update --init --recursive
+
 ./autogen.sh
 CFLAGS="$C_LTO_FLAGS" \
 ./configure \
