@@ -85,7 +85,7 @@ cd shadowsocksr-libev
 
 # build ahead to reconfigure
 cd libudns
-CFLAGS="C_LTO_FLAGS" \
+CFLAGS="$C_LTO_FLAGS" \
 ./configure \
     --disable-assert \
     --disable-silent-rules \
