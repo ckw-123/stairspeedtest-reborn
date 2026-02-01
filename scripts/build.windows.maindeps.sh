@@ -6,8 +6,8 @@ set -xe
 git clone --branch curl-8_18_0 --single-branch --depth 1 https://github.com/curl/curl
 cd curl
 cmake \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_C_FLAGS_RELEASE="$C_FLAGS" \
+    -DCMAKE_BUILD_TYPE=MinSizeRel \
+    -DCMAKE_C_FLAGS_MINSIZEREL="$C_FLAGS" \
     -DBUILD_CURL_EXE=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" \
@@ -61,8 +61,8 @@ cd ..
 git clone --depth 1 https://github.com/jbeder/yaml-cpp
 cd yaml-cpp
 cmake \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS_RELEASE="$CXX_FLAGS" \
+    -DCMAKE_BUILD_TYPE=MinSizeRel \
+    -DCMAKE_CXX_FLAGS_MINSIZEREL="$CXX_FLAGS" \
     -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" \
     -G "Unix Makefiles" \
     -DBUILD_TESTING=OFF \
@@ -92,8 +92,8 @@ cd ..
 git clone --branch dev --single-branch --depth 1 https://github.com/pngwriter/pngwriter
 cd pngwriter
 cmake \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS_RELEASE="$CXX_FLAGS" \
+    -DCMAKE_BUILD_TYPE=MinSizeRel \
+    -DCMAKE_CXX_FLAGS_MINSIZEREL="$CXX_FLAGS" \
     -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX" \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     -G "Unix Makefiles" \
