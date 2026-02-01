@@ -6,7 +6,7 @@ set -xe
 
 # git clone --branch v2.28.10 --depth 1 https://github.com/Mbed-TLS/mbedtls
 
-git clone --branch v3.6.5 --depth 1 --single-branch https://github.com/Mbed-TLS/mbedtls
+git clone --branch v3.6.5 --depth 1 --recursive https://github.com/Mbed-TLS/mbedtls
 
 
 cd mbedtls
