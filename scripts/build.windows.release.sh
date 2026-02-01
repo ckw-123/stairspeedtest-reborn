@@ -8,7 +8,7 @@ cmake \
     -G "Unix Makefiles" \
     .
 
-make -j
+make VERBOSE=1 -j
 rm stairspeedtest.exe
 
 # this may change in the future
