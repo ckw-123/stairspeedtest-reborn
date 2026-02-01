@@ -4,7 +4,11 @@ mkdir "$USERPROFILE/clients/built"
 cd "$USERPROFILE/clients"
 set -xe
 
-git clone --branch v2.28.10 --depth 1 https://github.com/Mbed-TLS/mbedtls
+# git clone --branch v2.28.10 --depth 1 https://github.com/Mbed-TLS/mbedtls
+
+git clone --branch v3.6.5 --depth 1 --single-branch https://github.com/Mbed-TLS/mbedtls
+
+
 cd mbedtls
 cmake \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
@@ -61,8 +65,10 @@ cd ..
 # git checkout --detach c2fc967
 # git submodule update --init --recursive
 
+
 git clone --depth 1 --filter=blob:none --recursive https://github.com/shadowsocks/shadowsocks-libev
 cd shadowsocks-libev
+
 
 ./autogen.sh
 CFLAGS="$C_LTO_FLAGS" \
@@ -80,7 +86,11 @@ CFLAGS="$C_LTO_FLAGS" \
 # fix codes
 sed -i "s/%I/%z/g" src/utils.h
 
-sed -i '1i typedef unsigned int in_addr_t;' src/utils.h
+
+# [新增] 修复 src/udprelay.c 中 Windows 缺失 in_addr_t 类型的问题
+# 直接将其替换为标准的 uint32_t，这比 typedef 更安全，且完美适配代码逻辑
+sed -i "s/in_addr_t/uint32_t/g" src/udprelay.c
+
 
 make -j
 gcc $LD_C_LTO_FLAGS $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ss-local -static -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre
