@@ -4,17 +4,12 @@ mkdir "$USERPROFILE/clients/built"
 cd "$USERPROFILE/clients"
 set -xe
 
-
-export AR=gcc-ar.exe
-export RANLIB=gcc-ranlib.exe
-
-
 git clone --branch v2.28.10 --depth 1 https://github.com/Mbed-TLS/mbedtls
 cd mbedtls
 cmake \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
-    -DCMAKE_C_FLAGS_MINSIZEREL="$C_FLAGS -flto=auto -flto-partition=none" \
+    -DCMAKE_C_FLAGS_MINSIZEREL="$C_LTO_FLAGS" \
     -DENABLE_PROGRAMS=OFF \
     -DENABLE_TESTING=OFF \
     -DMBEDTLS_FATAL_WARNINGS=OFF \
@@ -29,7 +24,7 @@ curl -LO https://github.com/shadowsocks/libev/archive/mingw.tar.gz
 tar xvf mingw.tar.gz
 cd libev-mingw
 mkdir build
-CFLAGS="$C_FLAGS -flto=auto -flto-partition=none -Wno-error=incompatible-pointer-types -Wno-error=int-conversion" \
+CFLAGS="$C_LTO_FLAGS -Wno-error=incompatible-pointer-types -Wno-error=int-conversion" \
 ./configure \
     --disable-silent-rules \
     --disable-shared \
@@ -45,7 +40,7 @@ git clone --depth 1 https://github.com/shadowsocks/simple-obfs
 cd simple-obfs
 git submodule update --init --depth 1
 ./autogen.sh
-CFLAGS="$C_FLAGS -flto=auto -flto-partition=none -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
+CFLAGS="$C_LTO_FLAGS -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
 ./configure \
     --disable-assert \
     --disable-documentation \
@@ -57,7 +52,7 @@ CFLAGS="$C_FLAGS -flto=auto -flto-partition=none -Wno-error=incompatible-pointer
 
 make -j
 
-gcc $C_FLAGS -flto=auto -flto-partition=none $LD_FLAGS $(find src/ -name "obfs_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o simple-obfs -static -lws2_32
+gcc $LD_C_LTO_FLAGS $(find src/ -name "obfs_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o simple-obfs -static -lws2_32
 mv simple-obfs.exe ../built/
 cd ..
 
@@ -66,7 +61,7 @@ cd shadowsocks-libev
 git checkout --detach c2fc967
 git submodule update --init --recursive
 ./autogen.sh
-CFLAGS="$C_FLAGS -flto=auto -flto-partition=none" \
+CFLAGS="$C_LTO_FLAGS" \
 ./configure \
         --disable-assert \
         --disable-connmarktos \
@@ -81,7 +76,7 @@ CFLAGS="$C_FLAGS -flto=auto -flto-partition=none" \
 # fix codes
 sed -i "s/%I/%z/g" src/utils.h
 make -j
-gcc $C_FLAGS -flto=auto -flto-partition=none $LD_FLAGS $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ss-local -static -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre
+gcc $LD_C_LTO_FLAGS $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ss-local -static -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre
 mv ss-local.exe ../built/
 cd ..
 
@@ -90,7 +85,7 @@ cd shadowsocksr-libev
 
 # build ahead to reconfigure
 cd libudns
-CFLAGS="$C_FLAGS -flto=auto -flto-partition=none" \
+CFLAGS="C_LTO_FLAGS" \
 ./configure \
     --disable-assert \
     --disable-silent-rules \
@@ -99,7 +94,7 @@ CFLAGS="$C_FLAGS -flto=auto -flto-partition=none" \
 make -j
 cd ..
 
-CFLAGS="$C_FLAGS -flto=auto -flto-partition=none -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
+CFLAGS="$C_LTO_FLAGS -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration" \
 ./configure \
     --disable-assert \
     --disable-documentation \
@@ -114,15 +109,15 @@ sed -i "s/^const/extern const/g" src/tls.h
 sed -i "s/^const/extern const/g" src/http.h
 make -j
 
-gcc $C_FLAGS -flto=auto -flto-partition=none $LD_FLAGS $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ssr-local -static -lpcre -lssl -lcrypto -lws2_32 -lcrypt32
+gcc $LD_C_LTO_FLAGS $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ssr-local -static -lpcre -lssl -lcrypto -lws2_32 -lcrypt32
 mv ssr-local.exe ../built/
 cd ..
 
 git clone --branch dev --single-branch --depth 1 https://github.com/trojan-gfw/trojan
 cd trojan
 cmake \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS_RELEASE="$CXX_FLAGS" \
+    -DCMAKE_BUILD_TYPE=MinSizeRel \
+    -DCMAKE_CXX_FLAGS_MINSIZEREL="$CXX_FLAGS" \
     -DENABLE_MYSQL=OFF \
     -DENABLE_NAT=OFF \
     -DENABLE_REUSE_PORT=OFF \
