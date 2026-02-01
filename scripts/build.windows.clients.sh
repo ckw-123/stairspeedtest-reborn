@@ -4,7 +4,7 @@ mkdir "$USERPROFILE/clients/built"
 cd "$USERPROFILE/clients"
 set -xe
 
-Wno_error="-Wno-error=incompatible-pointer-types -Wno-error=int-conversion"
+Wno_error="-Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration"
 
 git clone --branch v2.28.10 --single-branch --depth 1 https://github.com/Mbed-TLS/mbedtls
 cd mbedtls
