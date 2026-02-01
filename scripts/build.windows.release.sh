@@ -15,6 +15,6 @@ rm stairspeedtest.exe
 export FREETYPE_DEPS=$(pkg-config --libs --static harfbuzz)
 # build resources
 windres -J rc -O coff -i res/res.rc -o res.res
-g++ $LD_FLAGS $(find CMakeFiles/stairspeedtest.dir/src -name "*.obj") "$USERPROFILE/maindeps/curl/lib/libcurl.a" -lbcrypt res.res -o base/stairspeedtest.exe -static -levent -lPNGwriter -lfreetype $FREETYPE_DEPS -lpng -lpcre2-8 -lyaml-cpp -lssl -lcrypto -lws2_32 -lwsock32 -lcrypt32 -liphlpapi -lz -lbz2 -lsecur32
+g++ $LD_FLAGS $(find CMakeFiles/stairspeedtest.dir/src -name "*.obj") "$USERPROFILE/maindeps/curl/lib/libcurl.a" -lbcrypt res.res -o base/stairspeedtest.exe -static -levent -lPNGwriter -lfreetype $FREETYPE_DEPS -lpng -lpcre2-8 -lyaml-cpp -lssl -lcrypto -lws2_32 -lwsock32 -lcrypt32 -liphlpapi -lz -lbz2
 
 set +xe
