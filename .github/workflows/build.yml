@@ -24,11 +24,14 @@ jobs:
     - name: Initialize Optimized Flags
       run: |
         common_flags="-DNDEBUG -Os -ffunction-sections -fdata-sections"
-        common_cflags="$common_flags -fno-asynchronous-unwind-tables"
-        common_cxxflags="$common_flags -fno-rtti"
-        echo "C_FLAGS=$common_cflags" >> $GITHUB_ENV
-        echo "CXX_FLAGS=$common_cxxflags" >> $GITHUB_ENV
+        lto_flags="-flto=auto -flto-partition=none"
+        echo "C_FLAGS=$common_flags -fno-asynchronous-unwind-tables" >> $GITHUB_ENV
+        echo "C_LTO_FLAGS=$C_FLAGS $lto_flags" >> $GITHUB_ENV
+        echo "CXX_FLAGS=$common_flags -fno-rtti" >> $GITHUB_ENV
         echo "LD_FLAGS=-Wl,--disable-reloc-section,--gc-sections,--strip-all" >> $GITHUB_ENV
+        echo "LD_C_LTO_FLAGS=$C_LTO_FLAGS $LD_FLAGS" >> $GITHUB_ENV
+        echo AR=gcc-ar.exe >> $GITHUB_ENV
+        echo RANLIB=gcc-ranlib.exe >> $GITHUB_ENV
     - name: Build dependencies and clients
       run: |
         bash scripts/build.windows.maindeps.sh
