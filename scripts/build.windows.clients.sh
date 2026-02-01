@@ -79,6 +79,9 @@ CFLAGS="$C_LTO_FLAGS" \
 
 # fix codes
 sed -i "s/%I/%z/g" src/utils.h
+
+sed -i '1i typedef unsigned int in_addr_t;' src/utils.h
+
 make -j
 gcc $LD_C_LTO_FLAGS $(find src/ -name "ss_local-*.o") $(find . -name "*.a" ! -name "*.dll.a") "$LIBEV_PATH/lib/libev.a" -o ss-local -static -lws2_32 -lsodium -lmbedtls -lmbedcrypto -lpcre
 mv ss-local.exe ../built/
