@@ -13,6 +13,21 @@
 
 using namespace std::chrono;
 
+// ==========================================
+// [优化] 4K 高分屏适配设置
+// RENDER_SCALE: 缩放倍率。
+// 1.0 = 原版 (适合 1080p)
+// 2.0 = 2K/QHD
+// 3.0 = 4K/UHD (推荐，显示效果最清晰)
+// ==========================================
+const float RENDER_SCALE = 3.0f;
+// 计算线条宽度，确保在高分屏上边框可见
+const int LINE_WIDTH = (int)(1 * RENDER_SCALE); 
+
+// 辅助宏：快速计算缩放后的整数值
+#define S(x) ((int)((x) * RENDER_SCALE))
+// ==========================================
+
 std::string export_sort_method_render = "none";
 bool export_as_ssrspeed = false;
 
@@ -31,28 +46,21 @@ const int def_bounds[5] = {0, 64 * 1024, 512 * 1024, 4 * 1024 * 1024, 16 * 1024 
 const int rainbow_colorgroup[8][3] = {{65535, 65535, 65535}, {26112, 65535, 26112}, {65535, 65535, 26112}, {65535, 45568, 26112}, {65535, 26112, 26112}, {57856, 35840, 65535}, {26112, 52224, 65535}, {26112, 26112, 65535}};
 const int rainbow_bounds[8] = {0, 64 * 1024, 512 * 1024, 4 * 1024 * 1024, 16 * 1024 * 1024, 24 * 1024 * 1024, 32 * 1024 * 1024, 40 * 1024 * 1024};
 
-// ================================================
-// 4K高清显示优化配置 - 新增部分开始
-// ================================================
-// 启用此宏以生成适配27寸4K显示器的高清图像
-// 启用后，所有视觉元素按比例放大3倍，图像尺寸接近4K分辨率
-// 重要：在操作系统显示设置中必须将缩放设为100%以获得最清晰效果
-#define ENABLE_4K_OUTPUT
-
-#ifdef ENABLE_4K_OUTPUT
-    // 4K显示优化参数
-    const double SCALE_FACTOR = 3.0;      // 缩放因子：3.0倍放大
-    const int BASE_FONTSIZE = 36;         // 基础字体大小：12*3=36px
-    const int TARGET_WIDTH = 3840;        // 目标宽度：4K UHD宽度
-    const int MIN_HEIGHT_PER_ROW = 72;    // 每行最小高度：24*3=72px
-#else
-    // 原始参数（保持向后兼容）
-    const double SCALE_FACTOR = 1.0;
-    const int BASE_FONTSIZE = 12;
-#endif
-// ================================================
-// 4K高清显示优化配置 - 新增部分结束
-// ================================================
+// [新增] 绘制加粗线条的辅助函数，替代原版 png.line
+// 在高分辨率下，1像素的线条太细，需要绘制矩形来模拟粗线
+void draw_line_scaled(pngwriter &png, int x1, int y1, int x2, int y2, double r, double g, double b)
+{
+    // 如果是垂直线
+    if (x1 == x2) {
+        // 绘制一个宽度为 LINE_WIDTH 的矩形
+        png.filledsquare(x1, y1, x1 + LINE_WIDTH - 1, y2, r, g, b);
+    }
+    // 如果是水平线
+    else {
+        // 绘制一个高度为 LINE_WIDTH 的矩形
+        png.filledsquare(x1, y1, x2, y1 + LINE_WIDTH - 1, r, g, b);
+    }
+}
 
 int calcLength(const std::string &data)
 {
@@ -72,54 +80,16 @@ int getTextLength(const std::string &str)
     return ((calcLength(str) - str.size()) / 3) * 2 + (str.size() * 2 - calcLength(str)) - count(str.begin(), str.end(), ' ') / 2;
 }
 
-// ================================================
-// 注意：此函数在原代码中被注释掉了，但我们仍需保留它
-// 因为它可能被其他代码引用，或者未来可能被重新启用
-// ================================================
-/*
-static inline int calcCharCount(std::string data, int type)
-{
-    int uBound, lBound, total = 0;
-    switch(type)
-    {
-    case 0: //number
-        uBound = 57;
-        lBound = 48;
-        break;
-    case 3: //percent
-        uBound = 37;
-        lBound = 37;
-        break;
-    case 4: //dot
-        uBound = 56;
-        lBound = 56;
-        break;
-    default: //all basic chars
-        uBound = 255;
-        lBound = 0;
-        break;
-    }
-
-    for(unsigned int i = 0; i < data.size(); i++)
-    {
-        if(int(data[i]) >= lBound && int(data[i]) <= uBound)
-            total++;
-    }
-    return total;
-}
-*/
-
 static inline int getWidth(pngwriter *png, const std::string &font, int fontsize, const std::string &text)
 {
     return png->get_text_width_utf8(const_cast<char *>(font.data()), fontsize, const_cast<char *>(text.data()));
-    //const int widChnChar = 17, widEngChar = 9;
-    //return ((calcLength(text) - text.size()) / 3) * widChnChar + ((text.size() * 2 - calcLength(text)) - count(text.begin(), text.end(), ' ') / 2) * widEngChar;
 }
 
 void rendererInit(const std::string &font, int fontsize)
 {
     pngwriter png;
     writeLog(LOG_TYPE_RENDER, "Start calculating basic string widths for font '" + font + "' at size " + std::to_string(fontsize) + ".");
+    // 这里的 fontsize 已经是缩放后的大小，所以计算出的宽度也会自动适配
     widNumber = getWidth(&png, font, fontsize, "1");
     widNA = getWidth(&png, font, fontsize, "N/A");
     widB = getWidth(&png, font, fontsize, "B");
@@ -166,8 +136,6 @@ static inline int getTextWidth(pngwriter *png, const std::string &font, int font
             cntNumber++;
     }
     total_width = cntNumber * widNumber + widDot;
-    //if(strFind(text, "."))
-    //total_width += widDot;
 
     if(strFind(text, "%"))
         total_width += widPercent;
@@ -185,20 +153,6 @@ static inline int getTextWidth(pngwriter *png, const std::string &font, int font
 
     return total_width;
 }
-
-/*
-static inline int getTextWidth(pngwriter *png, std::string font, int fontsize, std::string text)
-{
-    return png->get_text_width_utf8(const_cast<char *>(font.data()), fontsize, const_cast<char *>(text.data()));
-}
-*/
-/*
-static inline int getTextWidth(pngwriter *png, std::string font, int fontsize, std::string text)
-{
-    return calcCharCount(text, 0) * widNumber + calcCharCount(text, 1) * widUpperLetter + calcCharCount(text, 2) * widLowerLetter + calcCharCount(text, 3) * widPercent \
-    + calcCharCount(text, 4) * widDot + calcCharCount(text, 5) * widSpace;
-}
-*/
 
 static inline void plot_text_utf8(pngwriter *png, std::string face_path, int fontsize, int x_start, int y_start, double angle, std::string text, double red, double green, double blue)
 {
@@ -322,29 +276,18 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
     //predefined values
     std::string font = "tools" PATH_SLASH "misc" PATH_SLASH "WenQuanYiMicroHei-01.ttf";
 
-    // ================================================
-    // 4K优化：基础尺寸参数调整 - 修改开始
-    // ================================================
-    int fontsize = BASE_FONTSIZE;  // 使用4K配置中的字体大小
-    int text_x_offset = static_cast<int>(5 * SCALE_FACTOR);
-    int height_line = static_cast<int>(24 * SCALE_FACTOR);
-    int text_y_offset = static_cast<int>(7 * SCALE_FACTOR);
-    
+    // [优化] 应用缩放因子
+    int fontsize = S(12), text_x_offset = S(5), height_line = S(24), text_y_offset = S(7);
     double border_red = 0.8, border_green = 0.8, border_blue = 0.8;
     
     if(export_as_new_style)
     {
-        height_line = static_cast<int>(30 * SCALE_FACTOR);
-        text_y_offset = static_cast<int>(10 * SCALE_FACTOR);
+        height_line = S(30); // Scaled
+        text_y_offset = S(10); // Scaled
     }
     
-    // 对齐和分隔线偏移也按比例缩放
-    const int center_align_offset = static_cast<int>(8 * SCALE_FACTOR);
-    const int vertical_delim_align_offset = static_cast<int>(2 * SCALE_FACTOR);
+    const int center_align_offset = S(8), vertical_delim_align_offset = S(2);
     const double text_red = 0.0, text_green = 0.0, text_blue = 0.0;
-    // ================================================
-    // 4K优化：基础尺寸参数调整 - 修改结束
-    // ================================================
     
     //extra value for aligning to the center
     const int enableCenterAlign = export_as_new_style ? 1 : 0;
@@ -356,9 +299,9 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
     {
         export_as_new_style = true;
         font = "tools" PATH_SLASH "misc" PATH_SLASH "SourceHanSansCN-Medium.otf";
-        fontsize = static_cast<int>(13 * SCALE_FACTOR); // SSRSpeed使用13px字体，按比例缩放
-        height_line = static_cast<int>(30 * SCALE_FACTOR);
-        text_y_offset = static_cast<int>(7 * SCALE_FACTOR);
+        fontsize = S(13); // Scaled
+        height_line = S(30); // Scaled
+        text_y_offset = S(7); // Scaled
         border_red = 0.5;
         border_green = 0.5;
         border_blue = 0.5;
@@ -369,21 +312,7 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
     export_sort_method_render = export_sort_method;
     node_count = nodes.size();
     total_line = node_count + 4;
-    
-    // ================================================
-    // 4K优化：图像总高度计算 - 修改开始
-    // ================================================
-#ifdef ENABLE_4K_OUTPUT
-    // 在4K模式下，确保每行有足够的高度
-    total_height = std::max(MIN_HEIGHT_PER_ROW * total_line, 2160);
-#else
-    // 原始高度计算逻辑
     total_height = height_line * total_line;
-#endif
-    // ================================================
-    // 4K优化：图像总高度计算 - 修改结束
-    // ================================================
-    
     std::sort(nodes.begin(), nodes.end(), comparer); //sort by export_sort_method
 
     //add title line into the list
@@ -418,11 +347,6 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
 
     for(int i = 0; i <= node_count; i++)
     {
-        //store them all into arrays first
-        //don't calculate all remarks and group widths
-        //instead we use longest group/remarks to calculate width
-        //group_widths.push_back(getTextWidth(&png, font, fontsize, nodes[i].group));
-        //remarks_widths.push_back(getTextWidth(&png, font, fontsize, nodes[i].remarks));
         if(getTextLength(nodes[i].group) > longest_group_len)
         {
             longest_group = nodes[i].group;
@@ -457,8 +381,7 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
             if(export_nat_type)
                 nattype_widths.push_back(getTextWidth(&png, font, fontsize, nodes[i].natType.get()));
         }
-        //group_width = max(group_widths[i] + center_align_offset, group_width);
-        //remarks_width = max(remarks_widths[i] + center_align_offset, remarks_width);
+
         pkLoss_width = std::max(pkLoss_widths[i] + center_align_offset, pkLoss_width);
         avgPing_width = std::max(avgPing_widths[i] + center_align_offset, avgPing_width);
         if(export_as_new_style)
@@ -476,12 +399,12 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
     }
     //only calculate the width of the group/remark title line
     remarks_widths.push_back(getWidth(&png, font, fontsize, node.remarks));
-    remarks_width = std::max(getWidth(&png, font, fontsize, longest_remarks) + center_align_offset, remarks_widths[0] + center_align_offset) + 4;
+    // [优化] 额外的内边距也需要缩放 + S(4)
+    remarks_width = std::max(getWidth(&png, font, fontsize, longest_remarks) + center_align_offset, remarks_widths[0] + center_align_offset) + S(4);
     group_widths.push_back(getWidth(&png, font, fontsize, node.group));
-    group_width = std::max(getWidth(&png, font, fontsize, longest_group) + center_align_offset, group_widths[0] + center_align_offset) + 4;
+    group_width = std::max(getWidth(&png, font, fontsize, longest_group) + center_align_offset, group_widths[0] + center_align_offset) + S(4);
 
-    int width_all[8] = {0, group_width, remarks_width, pkLoss_width, avgPing_width, sitePing_width, avgSpeed_width, maxSpeed_width}; //put them into an array for reading
-    //int width_all[7] = {0, group_width, remarks_width, pkLoss_width, avgPing_width, avgSpeed_width, maxSpeed_width}; //put them into an array for reading
+    int width_all[8] = {0, group_width, remarks_width, pkLoss_width, avgPing_width, sitePing_width, avgSpeed_width, maxSpeed_width}; 
     total_width = group_width + remarks_width + pkLoss_width + avgPing_width + sitePing_width + avgSpeed_width;
     if(export_with_maxSpeed)
         total_width += maxSpeed_width;
@@ -506,34 +429,6 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
         traffic += "Working Node(s) : [" + std::to_string(onlines) + "/" + std::to_string(node_count) + "]";
     }
 
-    // ================================================
-    // 4K优化：图像总宽度计算 - 修改开始
-    // ================================================
-#ifdef ENABLE_4K_OUTPUT
-    // 在4K模式下，固定宽度为3840，智能分配列宽
-    final_width = TARGET_WIDTH;
-    
-    // 计算当前所有列的总宽度
-    int current_total_width = total_width;
-    
-    // 如果当前总宽度小于目标宽度，将多余宽度分配给"Remarks"和"Group"列
-    if(current_total_width < final_width && current_total_width > 0)
-    {
-        int extra_width = final_width - current_total_width;
-        // 将额外宽度的70%分配给Remarks列，30%分配给Group列
-        int remarks_extra = static_cast<int>(extra_width * 0.7);
-        int group_extra = extra_width - remarks_extra;
-        
-        remarks_width += remarks_extra;
-        group_width += group_extra;
-        
-        // 更新宽度数组
-        width_all[2] = remarks_width; // remarks_width是数组第三个元素（索引2）
-        width_all[1] = group_width;   // group_width是数组第二个元素（索引1）
-    }
-    total_width = final_width;
-#else
-    // 原始动态宽度计算逻辑
     final_width = total_width;
     final_width = std::max(getWidth(&png, font, fontsize, gentime) + center_align_offset, final_width);
     final_width = std::max(getWidth(&png, font, fontsize, traffic) + center_align_offset, final_width);
@@ -542,30 +437,9 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
     if(final_width > total_width)
         width_all[2] += final_width - total_width;
     total_width = final_width;
-#endif
-    // ================================================
-    // 4K优化：图像总宽度计算 - 修改结束
-    // ================================================
-    
     writeLog(0, "All values generated. Start exporting image...", LOG_LEVEL_INFO);
-    
-    // ================================================
-    // 4K优化：添加尺寸日志输出 - 新增开始
-    // ================================================
-#ifdef ENABLE_4K_OUTPUT
-    writeLog(0, "4K MODE ENABLED: Creating PNG with dimensions: " + 
-             std::to_string(total_width) + "x" + std::to_string(total_height) + 
-             " (Scale factor: " + std::to_string(SCALE_FACTOR) + ")", LOG_LEVEL_INFO);
-#else
-    writeLog(0, "Standard mode: Creating PNG with dimensions: " + 
-             std::to_string(total_width) + "x" + std::to_string(total_height), LOG_LEVEL_INFO);
-#endif
-    // ================================================
-    // 4K优化：添加尺寸日志输出 - 新增结束
-    // ================================================
 
     //initialize the file
-    //pngwriter png(total_width, total_height, 1.0, pngname.data());
     png = pngwriter(total_width, total_height, 1.0, pngname.data());
     //then draw from the bottom
     int line_index = 0;
@@ -574,16 +448,17 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
         //about message
         plot_text_utf8(&png, font, fontsize, text_x_offset, text_y_offset + line_index * height_line, 0.0, about, text_red, text_green, text_blue);
         line_index++;
-        png.line(1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
+        // [优化] 使用 draw_line_scaled 替代 png.line
+        draw_line_scaled(png, 1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
     }
     //generate time
     plot_text_utf8(&png, font, fontsize, text_x_offset, text_y_offset + line_index * height_line, 0.0, gentime, text_red, text_green, text_blue);
     line_index++;
-    png.line(1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
+    draw_line_scaled(png, 1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
     //traffic and online nodes
     plot_text_utf8(&png, font, fontsize, text_x_offset, text_y_offset + line_index * height_line, 0.0, traffic, text_red, text_green, text_blue);
     line_index++;
-    png.line(1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
+    draw_line_scaled(png, 1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
 
     //now draw all the nodes
     int this_x_offset = 0, this_y_offset = 0, line_offset = vertical_delim_align_offset, j = 0;
@@ -596,10 +471,10 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
         if(i > 0)
             plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].group, text_red, text_green, text_blue);
         else
-            plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(group_widths[i], group_width) - (export_as_ssrspeed ? 4 : 0), this_y_offset, 0.0, nodes[i].group, text_red, text_green, text_blue);
+            plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(group_widths[i], group_width) - (export_as_ssrspeed ? S(4) : 0), this_y_offset, 0.0, nodes[i].group, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
-        png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
+        draw_line_scaled(png, line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         //remarks
         //don't align remarks except title
@@ -609,19 +484,19 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
             plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(remarks_widths[i], remarks_width), this_y_offset, 0.0, nodes[i].remarks, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
-        png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
+        draw_line_scaled(png, line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         //packet loss
         plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(pkLoss_widths[i], pkLoss_width), this_y_offset, 0.0, nodes[i].pkLoss, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
-        png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
+        draw_line_scaled(png, line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         //average ping
         plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(avgPing_widths[i], avgPing_width), this_y_offset, 0.0, nodes[i].avgPing, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
-        png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
+        draw_line_scaled(png, line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         if(export_as_new_style)
         {
@@ -629,7 +504,7 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
             plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(sitePing_widths[i], sitePing_width), this_y_offset, 0.0, nodes[i].sitePing, text_red, text_green, text_blue);
             j++;
             line_offset += width_all[j];
-            png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
+            draw_line_scaled(png, line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
             this_x_offset += width_all[j];
         }
         else
@@ -639,36 +514,38 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
         if(i > 0)
         {
             getSpeedColor(nodes[i].avgSpeed, &bg_color);
-            png.filledsquare(line_offset + 1, line_index * height_line + 2, line_offset + width_all[j + 1] - 1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
+            // [优化] 调整背景色块位置，避免覆盖粗边框，偏移量改为 S(1) 和 S(2) 等
+            png.filledsquare(line_offset + LINE_WIDTH, line_index * height_line + LINE_WIDTH + 1, line_offset + width_all[j + 1] - 1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
         }
         //average speed
-        plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(avgSpeed_widths[i], avgSpeed_width), (i > 0 && export_as_ssrspeed) ? this_y_offset + 2 : this_y_offset, 0.0, nodes[i].avgSpeed, text_red, text_green, text_blue);
+        plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(avgSpeed_widths[i], avgSpeed_width), (i > 0 && export_as_ssrspeed) ? this_y_offset + S(2) : this_y_offset, 0.0, nodes[i].avgSpeed, text_red, text_green, text_blue);
         if(export_with_maxSpeed) //see if we want to draw max speed
         {
             j++;
             line_offset += width_all[j];
-            png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
+            draw_line_scaled(png, line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
             this_x_offset += width_all[j];
             //draw color background
             if(i > 0)
             {
                 getSpeedColor(nodes[i].maxSpeed, &bg_color);
-                png.filledsquare(line_offset + 1, line_index * height_line + 2, line_offset + width_all[j + 1] - 1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
+                // [优化] 调整背景色块
+                png.filledsquare(line_offset + LINE_WIDTH, line_index * height_line + LINE_WIDTH + 1, line_offset + width_all[j + 1] - 1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
             }
             //max speed
-            plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(maxSpeed_widths[i], maxSpeed_width), (i > 0 && export_as_ssrspeed) ? this_y_offset + 2 : this_y_offset, 0.0, nodes[i].maxSpeed, text_red, text_green, text_blue);
+            plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(maxSpeed_widths[i], maxSpeed_width), (i > 0 && export_as_ssrspeed) ? this_y_offset + S(2) : this_y_offset, 0.0, nodes[i].maxSpeed, text_red, text_green, text_blue);
         }
         if(export_nat_type) //see if we want to draw nat type
         {
             j++;
             line_offset += width_all[j];
-            png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
+            draw_line_scaled(png, line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
             this_x_offset += width_all[j];
             //max speed
             plot_text_utf8(&png, font, fontsize, this_x_offset + calcCenterOffset(nattype_widths[i], nattype_width), this_y_offset, 0.0, nodes[i].natType.get(), text_red, text_green, text_blue);
         }
         line_index++; //one line completed,  moving up
-        png.line(1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
+        draw_line_scaled(png, 1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
         j = 0;
         line_offset = vertical_delim_align_offset;
     }
@@ -678,18 +555,19 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
         plot_text_utf8(&png, font, fontsize, text_x_offset + calcCenterOffset(getWidth(&png, font, fontsize, title), total_width), text_y_offset + line_index * height_line, 0.0, title, text_red, text_green, text_blue);
     }
     //basic border
-    png.line(1, 1, total_width, 1, border_red, border_green, border_blue);//bottom
-    png.line(1, total_height, total_width, total_height, border_red, border_green, border_blue);//top
+    // [优化] 绘制外边框，使用粗线
+    draw_line_scaled(png, 1, 1, total_width, 1, border_red, border_green, border_blue);//bottom
+    draw_line_scaled(png, 1, total_height, total_width, total_height, border_red, border_green, border_blue);//top
     if(export_as_ssrspeed)
     {
-        png.line(2, 1, 2, total_height, border_red, border_green, border_blue);//left, offset +1 pixel
+        draw_line_scaled(png, 2, 1, 2, total_height, border_red, border_green, border_blue);//left, offset +1 pixel? Scaled offset probably not needed for line thickness but let's keep logic
     }
     else
     {
-        png.line(1, 1, 1, total_height, border_red, border_green, border_blue);//left
+        draw_line_scaled(png, 1, 1, 1, total_height, border_red, border_green, border_blue);//left
     }
 
-    png.line(total_width, 1, total_width, total_height, border_red, border_green, border_blue);//right
+    draw_line_scaled(png, total_width, 1, total_width, total_height, border_red, border_green, border_blue);//right
     png.close(); //save picture
     //all done!
     return pngname;
@@ -697,10 +575,6 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
 
 #else
 
-// ================================================
-// 重要：这是第二个 exportRender 函数，用于 _FAST_RENDER 模式
-// 必须保留此函数，因为代码中可能有地方使用这个版本
-// ================================================
 // old style only since we cannot align to the center
 std::string exportRender(std::string resultpath, vector<nodeInfo> nodes, bool export_with_maxSpeed, std::string export_sort_method, std::string export_color_style, bool export_as_new_style, int test_duration)
 {
@@ -713,40 +587,16 @@ std::string exportRender(std::string resultpath, vector<nodeInfo> nodes, bool ex
 
     //predefined values
     const std::string font = "tools" PATH_SLASH "misc" PATH_SLASH "WenQuanYiMicroHei-01.ttf";
-    
-    // ================================================
-    // 4K优化：基础尺寸参数调整 - 修改开始（针对FAST_RENDER模式）
-    // ================================================
-    const int height_line = static_cast<int>(24 * SCALE_FACTOR);
-    const int fontsize = BASE_FONTSIZE;
-    const int text_x_offset = static_cast<int>(5 * SCALE_FACTOR);
-    const int text_y_offset = static_cast<int>(7 * SCALE_FACTOR);
-    const int center_align_offset = static_cast<int>(8 * SCALE_FACTOR);
-    const int vertical_delim_align_offset = static_cast<int>(2 * SCALE_FACTOR);
-    
+    // [优化] 缩放旧版样式的常量
+    const int height_line = S(24), fontsize = S(12), text_x_offset = S(5), text_y_offset = S(7), center_align_offset = S(8), vertical_delim_align_offset = S(2);
     const double border_red = 0.8, border_green = 0.8, border_blue = 0.8;
     const double text_red = 0.0, text_green = 0.0, text_blue = 0.0;
-    // ================================================
-    // 4K优化：基础尺寸参数调整 - 修改结束
-    // ================================================
 
     //initialize all values
     export_sort_method_render = export_sort_method;
     node_count = nodes.size();
     total_line = node_count + 4;
-    
-    // ================================================
-    // 4K优化：图像总高度计算 - 修改开始（针对FAST_RENDER模式）
-    // ================================================
-#ifdef ENABLE_4K_OUTPUT
-    total_height = std::max(MIN_HEIGHT_PER_ROW * total_line, 2160);
-#else
     total_height = height_line * total_line;
-#endif
-    // ================================================
-    // 4K优化：图像总高度计算 - 修改结束
-    // ================================================
-    
     if(export_sort_method != "none")
         sort(nodes.begin(), nodes.end(), comparer);//sort by export_sort_method
 
@@ -806,43 +656,11 @@ std::string exportRender(std::string resultpath, vector<nodeInfo> nodes, bool ex
     std::string traffic = "Traffic used : "+speedCalc((double)total_traffic)+". Working Node(s) : ["+std::to_string(onlines)+"/"+std::to_string(node_count)+"]";
     std::string about = "By Stair Speedtest Reborn " VERSION ".";
 
-    // ================================================
-    // 4K优化：图像总宽度计算 - 修改开始（针对FAST_RENDER模式）
-    // ================================================
-#ifdef ENABLE_4K_OUTPUT
-    // 在4K模式下，固定宽度为3840
-    final_width = TARGET_WIDTH;
-    
-    // 计算当前所有列的总宽度
-    int current_total_width = total_width;
-    
-    // 如果当前总宽度小于目标宽度，将多余宽度分配给"Remarks"和"Group"列
-    if(current_total_width < final_width && current_total_width > 0)
-    {
-        int extra_width = final_width - current_total_width;
-        // 将额外宽度的70%分配给Remarks列，30%分配给Group列
-        int remarks_extra = static_cast<int>(extra_width * 0.7);
-        int group_extra = extra_width - remarks_extra;
-        
-        remarks_width += remarks_extra;
-        group_width += group_extra;
-        
-        // 更新宽度数组
-        width_all[2] = remarks_width; // remarks_width
-        width_all[1] = group_width;   // group_width
-    }
-    total_width = final_width;
-#else
-    // 原始动态宽度计算逻辑
     final_width = max(getWidth(&png, font, fontsize, gentime) + center_align_offset, total_width);
     final_width = max(getWidth(&png, font, fontsize, traffic) + center_align_offset, total_width);
     if(final_width > total_width)
         width_all[2] += final_width - total_width;
     total_width = final_width;
-#endif
-    // ================================================
-    // 4K优化：图像总宽度计算 - 修改结束
-    // ================================================
 
     //initialize the file
     png = pngwriter(total_width, total_height, 1.0, pngname.data());
@@ -851,15 +669,15 @@ std::string exportRender(std::string resultpath, vector<nodeInfo> nodes, bool ex
     //about message
     plot_text_utf8(&png, font, fontsize, text_x_offset, text_y_offset + line_index * height_line, 0.0, about, text_red, text_green, text_blue);
     line_index++;
-    png.line(1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
+    draw_line_scaled(png, 1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
     //generate time
     plot_text_utf8(&png, font, fontsize, text_x_offset, text_y_offset + line_index * height_line, 0.0, gentime, text_red, text_green, text_blue);
     line_index++;
-    png.line(1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
+    draw_line_scaled(png, 1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
     //traffic and online nodes
     plot_text_utf8(&png, font, fontsize, text_x_offset, text_y_offset + line_index * height_line, 0.0, traffic, text_red, text_green, text_blue);
     line_index++;
-    png.line(1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
+    draw_line_scaled(png, 1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
 
     //now draw all the nodes
     int this_x_offset = 0, this_y_offset = 0, line_offset = vertical_delim_align_offset, j = 0;
@@ -871,39 +689,40 @@ std::string exportRender(std::string resultpath, vector<nodeInfo> nodes, bool ex
         plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].group, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
-        png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
+        draw_line_scaled(png, line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         //remarks
         plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].remarks, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
-        png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
+        draw_line_scaled(png, line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         //packet loss
         plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].pkLoss, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
-        png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
+        draw_line_scaled(png, line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         //average ping
         plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].avgPing, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
-        png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
+        draw_line_scaled(png, line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         /*
         //site ping, unused
         plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].sitePing, text_red, text_green, text_blue);
         j++;
         line_offset += width_all[j];
-        png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
+        draw_line_scaled(png, line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
         this_x_offset += width_all[j];
         */
         //draw color background
         if(i>0)
         {
             getSpeedColor(nodes[i].avgSpeed, &bg_color);
-            png.filledsquare(line_offset + 1, line_index * height_line + 2, line_offset + width_all[j + 1]-1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
+            // [优化] 调整背景色块位置
+            png.filledsquare(line_offset + LINE_WIDTH, line_index * height_line + LINE_WIDTH + 1, line_offset + width_all[j + 1]-1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
         }
         //average speed
         plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].avgSpeed, text_red, text_green, text_blue);
@@ -911,27 +730,28 @@ std::string exportRender(std::string resultpath, vector<nodeInfo> nodes, bool ex
         {
             j++;
             line_offset += width_all[j];
-            png.line(line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
+            draw_line_scaled(png, line_offset, line_index * height_line + 1, line_offset, (line_index + 1) * height_line, border_red, border_green, border_blue);//right side
             this_x_offset += width_all[j];
             //draw color background
             if(i>0)
             {
                 getSpeedColor(nodes[i].maxSpeed, &bg_color);
-                png.filledsquare(line_offset + 1, line_index * height_line + 2, line_offset + width_all[j + 1] - 1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
+                // [优化] 调整背景色块位置
+                png.filledsquare(line_offset + LINE_WIDTH, line_index * height_line + LINE_WIDTH + 1, line_offset + width_all[j + 1] - 1, (line_index + 1) * height_line, bg_color.red, bg_color.green, bg_color.blue);
             }
             //max speed
             plot_text_utf8(&png, font, fontsize, this_x_offset, this_y_offset, 0.0, nodes[i].maxSpeed, text_red, text_green, text_blue);
         }
         line_index++; //one line completed,  moving up
-        png.line(1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
+        draw_line_scaled(png, 1, line_index * height_line + 1, total_width, line_index * height_line + 1, border_red, border_green, border_blue);//delimiter
         j = 0;
         line_offset = vertical_delim_align_offset;
     }
     //basic border
-    png.line(1, 1, total_width, 1, border_red, border_green, border_blue);//bottom
-    png.line(1, total_height, total_width, total_height, border_red, border_green, border_blue);//top
-    png.line(1, 1, 1, total_height, border_red, border_green, border_blue);//left
-    png.line(total_width, 1, total_width, total_height, border_red, border_green, border_blue);//right
+    draw_line_scaled(png, 1, 1, total_width, 1, border_red, border_green, border_blue);//bottom
+    draw_line_scaled(png, 1, total_height, total_width, total_height, border_red, border_green, border_blue);//top
+    draw_line_scaled(png, 1, 1, 1, total_height, border_red, border_green, border_blue);//left
+    draw_line_scaled(png, total_width, 1, total_width, total_height, border_red, border_green, border_blue);//right
     png.close(); //save picture
     //all done!
     return pngname;
