@@ -31,6 +31,29 @@ const int def_bounds[5] = {0, 64 * 1024, 512 * 1024, 4 * 1024 * 1024, 16 * 1024 
 const int rainbow_colorgroup[8][3] = {{65535, 65535, 65535}, {26112, 65535, 26112}, {65535, 65535, 26112}, {65535, 45568, 26112}, {65535, 26112, 26112}, {57856, 35840, 65535}, {26112, 52224, 65535}, {26112, 26112, 65535}};
 const int rainbow_bounds[8] = {0, 64 * 1024, 512 * 1024, 4 * 1024 * 1024, 16 * 1024 * 1024, 24 * 1024 * 1024, 32 * 1024 * 1024, 40 * 1024 * 1024};
 
+// ================================================
+// 4K高清显示优化配置 - 新增部分开始
+// ================================================
+// 启用此宏以生成适配27寸4K显示器的高清图像
+// 启用后，所有视觉元素按比例放大3倍，图像尺寸接近4K分辨率
+// 重要：在操作系统显示设置中必须将缩放设为100%以获得最清晰效果
+#define ENABLE_4K_OUTPUT
+
+#ifdef ENABLE_4K_OUTPUT
+    // 4K显示优化参数
+    const double SCALE_FACTOR = 3.0;      // 缩放因子：3.0倍放大
+    const int BASE_FONTSIZE = 36;         // 基础字体大小：12*3=36px
+    const int TARGET_WIDTH = 3840;        // 目标宽度：4K UHD宽度
+    const int MIN_HEIGHT_PER_ROW = 72;    // 每行最小高度：24*3=72px
+#else
+    // 原始参数（保持向后兼容）
+    const double SCALE_FACTOR = 1.0;
+    const int BASE_FONTSIZE = 12;
+#endif
+// ================================================
+// 4K高清显示优化配置 - 新增部分结束
+// ================================================
+
 int calcLength(const std::string &data)
 {
     int total = 0;
@@ -49,6 +72,10 @@ int getTextLength(const std::string &str)
     return ((calcLength(str) - str.size()) / 3) * 2 + (str.size() * 2 - calcLength(str)) - count(str.begin(), str.end(), ' ') / 2;
 }
 
+// ================================================
+// 注意：此函数在原代码中被注释掉了，但我们仍需保留它
+// 因为它可能被其他代码引用，或者未来可能被重新启用
+// ================================================
 /*
 static inline int calcCharCount(std::string data, int type)
 {
@@ -295,15 +322,30 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
     //predefined values
     std::string font = "tools" PATH_SLASH "misc" PATH_SLASH "WenQuanYiMicroHei-01.ttf";
 
-    int fontsize = 12, text_x_offset = 5, height_line = 24, text_y_offset = 7;
+    // ================================================
+    // 4K优化：基础尺寸参数调整 - 修改开始
+    // ================================================
+    int fontsize = BASE_FONTSIZE;  // 使用4K配置中的字体大小
+    int text_x_offset = static_cast<int>(5 * SCALE_FACTOR);
+    int height_line = static_cast<int>(24 * SCALE_FACTOR);
+    int text_y_offset = static_cast<int>(7 * SCALE_FACTOR);
+    
     double border_red = 0.8, border_green = 0.8, border_blue = 0.8;
+    
     if(export_as_new_style)
     {
-        height_line = 30;
-        text_y_offset = 10;
+        height_line = static_cast<int>(30 * SCALE_FACTOR);
+        text_y_offset = static_cast<int>(10 * SCALE_FACTOR);
     }
-    const int center_align_offset = 8, vertical_delim_align_offset = 2;
+    
+    // 对齐和分隔线偏移也按比例缩放
+    const int center_align_offset = static_cast<int>(8 * SCALE_FACTOR);
+    const int vertical_delim_align_offset = static_cast<int>(2 * SCALE_FACTOR);
     const double text_red = 0.0, text_green = 0.0, text_blue = 0.0;
+    // ================================================
+    // 4K优化：基础尺寸参数调整 - 修改结束
+    // ================================================
+    
     //extra value for aligning to the center
     const int enableCenterAlign = export_as_new_style ? 1 : 0;
     const int center_align_offset_side = center_align_offset / 2;
@@ -314,9 +356,9 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
     {
         export_as_new_style = true;
         font = "tools" PATH_SLASH "misc" PATH_SLASH "SourceHanSansCN-Medium.otf";
-        fontsize = 13;
-        height_line = 30;
-        text_y_offset = 7;
+        fontsize = static_cast<int>(13 * SCALE_FACTOR); // SSRSpeed使用13px字体，按比例缩放
+        height_line = static_cast<int>(30 * SCALE_FACTOR);
+        text_y_offset = static_cast<int>(7 * SCALE_FACTOR);
         border_red = 0.5;
         border_green = 0.5;
         border_blue = 0.5;
@@ -327,7 +369,21 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
     export_sort_method_render = export_sort_method;
     node_count = nodes.size();
     total_line = node_count + 4;
+    
+    // ================================================
+    // 4K优化：图像总高度计算 - 修改开始
+    // ================================================
+#ifdef ENABLE_4K_OUTPUT
+    // 在4K模式下，确保每行有足够的高度
+    total_height = std::max(MIN_HEIGHT_PER_ROW * total_line, 2160);
+#else
+    // 原始高度计算逻辑
     total_height = height_line * total_line;
+#endif
+    // ================================================
+    // 4K优化：图像总高度计算 - 修改结束
+    // ================================================
+    
     std::sort(nodes.begin(), nodes.end(), comparer); //sort by export_sort_method
 
     //add title line into the list
@@ -450,6 +506,34 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
         traffic += "Working Node(s) : [" + std::to_string(onlines) + "/" + std::to_string(node_count) + "]";
     }
 
+    // ================================================
+    // 4K优化：图像总宽度计算 - 修改开始
+    // ================================================
+#ifdef ENABLE_4K_OUTPUT
+    // 在4K模式下，固定宽度为3840，智能分配列宽
+    final_width = TARGET_WIDTH;
+    
+    // 计算当前所有列的总宽度
+    int current_total_width = total_width;
+    
+    // 如果当前总宽度小于目标宽度，将多余宽度分配给"Remarks"和"Group"列
+    if(current_total_width < final_width && current_total_width > 0)
+    {
+        int extra_width = final_width - current_total_width;
+        // 将额外宽度的70%分配给Remarks列，30%分配给Group列
+        int remarks_extra = static_cast<int>(extra_width * 0.7);
+        int group_extra = extra_width - remarks_extra;
+        
+        remarks_width += remarks_extra;
+        group_width += group_extra;
+        
+        // 更新宽度数组
+        width_all[2] = remarks_width; // remarks_width是数组第三个元素（索引2）
+        width_all[1] = group_width;   // group_width是数组第二个元素（索引1）
+    }
+    total_width = final_width;
+#else
+    // 原始动态宽度计算逻辑
     final_width = total_width;
     final_width = std::max(getWidth(&png, font, fontsize, gentime) + center_align_offset, final_width);
     final_width = std::max(getWidth(&png, font, fontsize, traffic) + center_align_offset, final_width);
@@ -458,7 +542,27 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
     if(final_width > total_width)
         width_all[2] += final_width - total_width;
     total_width = final_width;
+#endif
+    // ================================================
+    // 4K优化：图像总宽度计算 - 修改结束
+    // ================================================
+    
     writeLog(0, "All values generated. Start exporting image...", LOG_LEVEL_INFO);
+    
+    // ================================================
+    // 4K优化：添加尺寸日志输出 - 新增开始
+    // ================================================
+#ifdef ENABLE_4K_OUTPUT
+    writeLog(0, "4K MODE ENABLED: Creating PNG with dimensions: " + 
+             std::to_string(total_width) + "x" + std::to_string(total_height) + 
+             " (Scale factor: " + std::to_string(SCALE_FACTOR) + ")", LOG_LEVEL_INFO);
+#else
+    writeLog(0, "Standard mode: Creating PNG with dimensions: " + 
+             std::to_string(total_width) + "x" + std::to_string(total_height), LOG_LEVEL_INFO);
+#endif
+    // ================================================
+    // 4K优化：添加尺寸日志输出 - 新增结束
+    // ================================================
 
     //initialize the file
     //pngwriter png(total_width, total_height, 1.0, pngname.data());
@@ -593,6 +697,10 @@ std::string exportRender(std::string resultpath, std::vector<nodeInfo> &nodes, b
 
 #else
 
+// ================================================
+// 重要：这是第二个 exportRender 函数，用于 _FAST_RENDER 模式
+// 必须保留此函数，因为代码中可能有地方使用这个版本
+// ================================================
 // old style only since we cannot align to the center
 std::string exportRender(std::string resultpath, vector<nodeInfo> nodes, bool export_with_maxSpeed, std::string export_sort_method, std::string export_color_style, bool export_as_new_style, int test_duration)
 {
@@ -605,15 +713,40 @@ std::string exportRender(std::string resultpath, vector<nodeInfo> nodes, bool ex
 
     //predefined values
     const std::string font = "tools" PATH_SLASH "misc" PATH_SLASH "WenQuanYiMicroHei-01.ttf";
-    const int height_line = 24, fontsize = 12, text_x_offset = 5, text_y_offset = 7, center_align_offset = 8, vertical_delim_align_offset = 2;
+    
+    // ================================================
+    // 4K优化：基础尺寸参数调整 - 修改开始（针对FAST_RENDER模式）
+    // ================================================
+    const int height_line = static_cast<int>(24 * SCALE_FACTOR);
+    const int fontsize = BASE_FONTSIZE;
+    const int text_x_offset = static_cast<int>(5 * SCALE_FACTOR);
+    const int text_y_offset = static_cast<int>(7 * SCALE_FACTOR);
+    const int center_align_offset = static_cast<int>(8 * SCALE_FACTOR);
+    const int vertical_delim_align_offset = static_cast<int>(2 * SCALE_FACTOR);
+    
     const double border_red = 0.8, border_green = 0.8, border_blue = 0.8;
     const double text_red = 0.0, text_green = 0.0, text_blue = 0.0;
+    // ================================================
+    // 4K优化：基础尺寸参数调整 - 修改结束
+    // ================================================
 
     //initialize all values
     export_sort_method_render = export_sort_method;
     node_count = nodes.size();
     total_line = node_count + 4;
+    
+    // ================================================
+    // 4K优化：图像总高度计算 - 修改开始（针对FAST_RENDER模式）
+    // ================================================
+#ifdef ENABLE_4K_OUTPUT
+    total_height = std::max(MIN_HEIGHT_PER_ROW * total_line, 2160);
+#else
     total_height = height_line * total_line;
+#endif
+    // ================================================
+    // 4K优化：图像总高度计算 - 修改结束
+    // ================================================
+    
     if(export_sort_method != "none")
         sort(nodes.begin(), nodes.end(), comparer);//sort by export_sort_method
 
@@ -673,11 +806,43 @@ std::string exportRender(std::string resultpath, vector<nodeInfo> nodes, bool ex
     std::string traffic = "Traffic used : "+speedCalc((double)total_traffic)+". Working Node(s) : ["+std::to_string(onlines)+"/"+std::to_string(node_count)+"]";
     std::string about = "By Stair Speedtest Reborn " VERSION ".";
 
+    // ================================================
+    // 4K优化：图像总宽度计算 - 修改开始（针对FAST_RENDER模式）
+    // ================================================
+#ifdef ENABLE_4K_OUTPUT
+    // 在4K模式下，固定宽度为3840
+    final_width = TARGET_WIDTH;
+    
+    // 计算当前所有列的总宽度
+    int current_total_width = total_width;
+    
+    // 如果当前总宽度小于目标宽度，将多余宽度分配给"Remarks"和"Group"列
+    if(current_total_width < final_width && current_total_width > 0)
+    {
+        int extra_width = final_width - current_total_width;
+        // 将额外宽度的70%分配给Remarks列，30%分配给Group列
+        int remarks_extra = static_cast<int>(extra_width * 0.7);
+        int group_extra = extra_width - remarks_extra;
+        
+        remarks_width += remarks_extra;
+        group_width += group_extra;
+        
+        // 更新宽度数组
+        width_all[2] = remarks_width; // remarks_width
+        width_all[1] = group_width;   // group_width
+    }
+    total_width = final_width;
+#else
+    // 原始动态宽度计算逻辑
     final_width = max(getWidth(&png, font, fontsize, gentime) + center_align_offset, total_width);
     final_width = max(getWidth(&png, font, fontsize, traffic) + center_align_offset, total_width);
     if(final_width > total_width)
         width_all[2] += final_width - total_width;
     total_width = final_width;
+#endif
+    // ================================================
+    // 4K优化：图像总宽度计算 - 修改结束
+    // ================================================
 
     //initialize the file
     png = pngwriter(total_width, total_height, 1.0, pngname.data());
