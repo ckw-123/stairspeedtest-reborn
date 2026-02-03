@@ -31,6 +31,9 @@ enum
     LOG_LEVEL_VERBOSE
 };
 
+// [修改] 全局日志开关，控制是否生成文件日志
+extern bool g_enable_file_log;
+
 extern std::string resultPath, logPath;
 
 int makeDir(const char *path);
