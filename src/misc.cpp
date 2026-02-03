@@ -48,6 +48,9 @@ typedef jpcre2::select<char> jp;
 #include <sys/socket.h>
 #endif // _WIN32
 
+// 初始化全局变量
+bool g_enable_log_file = false;
+
 void sleep(int interval)
 {
     /*
