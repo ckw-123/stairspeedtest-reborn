@@ -537,6 +537,9 @@ void chkArg(int argc, char* argv[])
             sub_url.assign(argv[++i]);
         else if(!strcmp(argv[i], "/g") && argc > i + 1)
             custom_group.assign(argv[++i]);
+        // [新增]：解析 /l 参数
+        else if (!strcmp(argv[i], "/l"))
+            g_enable_log_file = true;
     }
 }
 
