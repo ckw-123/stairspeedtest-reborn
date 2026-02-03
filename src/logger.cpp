@@ -59,6 +59,10 @@ std::string getTime(int type)
 
 void logInit(bool rpcmode)
 {
+    // [控制开关] 若日志记录功能已禁用，则立即退出
+    // 不会创建任何目录，logPath 保持为空
+    if (!g_enable_file_log) return;
+
     curtime = getTime(1);
     logPath = "logs" PATH_SLASH + curtime + ".log";
     std::string log_header = "Stair Speedtest " VERSION " started in ";
@@ -71,12 +75,18 @@ void logInit(bool rpcmode)
 
 void resultInit()
 {
+    // [控制开关] 禁止创建结果日志
+    if (!g_enable_file_log) return;
+
     curtime = getTime(1);
     resultPath = "results" PATH_SLASH + curtime + ".log";
 }
 
 void writeLog(int type, std::string content, int level)
 {
+    // [控制开关] 立即返回以避免互斥锁定和I/O开销
+    if (!g_enable_file_log) return;
+
     guarded_mutex guard(logger_mutex);
     std::string timestr = "[" + getTime(2) + "]", typestr = "[UNKNOWN]";
     switch(type)
@@ -123,6 +133,9 @@ void writeLog(int type, std::string content, int level)
 
 void logEOF()
 {
+    // [控制开关] 禁止写入文件结束标志
+    if (!g_enable_file_log) return;
+
     writeLog(LOG_TYPE_INFO,"Program terminated.");
     fileWrite(logPath, "--EOF--", false);
 }
