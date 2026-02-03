@@ -14,6 +14,9 @@
 
 #include "string_hash.h"
 
+// 全局日志开关：只有当此变量为 true 时，logger 才会写入文件
+extern bool g_enable_log_file;
+
 #ifdef _WIN32
 #include <unistd.h>
 #define PATH_SLASH "\\"
