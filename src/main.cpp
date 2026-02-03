@@ -32,6 +32,9 @@
 
 using namespace std::chrono;
 
+// 初始化全局变量
+bool g_enable_file_log = false;
+
 #define MAX_FILE_SIZE 100 * 1024 * 1024
 
 //use for command argument
@@ -539,7 +542,7 @@ void chkArg(int argc, char* argv[])
             custom_group.assign(argv[++i]);
         // [新增]：解析 /l 参数
         else if (!strcmp(argv[i], "/l"))
-            g_enable_log_file = true;
+            g_enable_file_log = true;
     }
 }
 
