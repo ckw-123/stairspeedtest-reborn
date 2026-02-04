@@ -1180,6 +1180,7 @@ int main(int argc, char* argv[])
     {
         printMsg(SPEEDTEST_MESSAGE_EOF, rpcmode);
         _getch();
+        std::cout << std::endl; // 添加换行
     }
 #ifdef _WIN32
     //stop socket library before exit
