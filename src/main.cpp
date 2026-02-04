@@ -864,6 +864,7 @@ void addNodes(std::string link, bool multilink)
         {
             printMsg(SPEEDTEST_MESSAGE_GROUP, rpcmode);
             getline(std::cin, strInput);
+            std::cout << std::endl; // 添加换行
             if(strInput.size())
             {
                 custom_group = rpcmode ? strInput : ACPToUTF8(strInput);
@@ -907,6 +908,7 @@ void addNodes(std::string link, bool multilink)
         {
             printMsg(SPEEDTEST_MESSAGE_GROUP, rpcmode);
             getline(std::cin, strInput);
+            std::cout << std::endl; // 添加换行
             if(strInput.size())
             {
                 custom_group = rpcmode ? strInput : ACPToUTF8(strInput);
