@@ -16,7 +16,7 @@ struct LOOKUP_ITEM
 LOOKUP_ITEM SPEEDTEST_MESSAGES[] =
 {
     {SPEEDTEST_MESSAGE_EOF, "\nSpeed Test done. Press any key to exit..."},
-    {SPEEDTEST_MESSAGE_WELCOME, "\nStair Speedtest " VERSION ""},
+    {SPEEDTEST_MESSAGE_WELCOME, "\nStair Speedtest " VERSION "\n\n"},
     {SPEEDTEST_MESSAGE_MULTILINK, "Multiple link provided, parsing all nodes.\n\n"},
     {SPEEDTEST_MESSAGE_FOUNDVMESS, "Found single V2Ray link.\n"},
     {SPEEDTEST_MESSAGE_FOUNDSS, "Found single Shadowsocks link.\n"},
