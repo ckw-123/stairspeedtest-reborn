@@ -32,9 +32,6 @@
 
 using namespace std::chrono;
 
-// 初始化全局变量
-bool g_enable_file_log = false;
-
 #define MAX_FILE_SIZE 100 * 1024 * 1024
 
 //use for command argument
@@ -561,6 +558,10 @@ void exportHTML()
 
 void saveResult(std::vector<nodeInfo> &nodes)
 {
+    // [修复] 如果开关未开启，直接返回，不执行任何写入操作
+    if (!g_enable_file_log)
+        return;
+
     INIReader ini;
     std::string data;
 
@@ -1062,10 +1063,11 @@ int main(int argc, char* argv[])
     if(sub_url.size())
     {
         link = sub_url;
-        std::cout<<"Provided from argument.\n"<<std::endl;
+//      std::cout<<"Provided from argument.\n"<<std::endl;
     }
     else
     {
+        std::cout<<"\n\nLink: "<<std::endl;
         getline(std::cin, link);
         if(!rpcmode)
             link = ACPToUTF8(link);
