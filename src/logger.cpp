@@ -76,7 +76,7 @@ void logInit(bool rpcmode)
 void resultInit()
 {
     // [控制开关] 禁止创建结果日志
-    if (!g_enable_file_log) return;
+    // if (!g_enable_file_log) return;
 
     curtime = getTime(1);
     resultPath = "results" PATH_SLASH + curtime + ".log";
