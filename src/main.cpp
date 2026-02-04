@@ -1067,7 +1067,7 @@ int main(int argc, char* argv[])
     }
     else
     {
-        std::cout<<"\n\nLink: "<<std::endl;
+        std::cout<<"Link: ";
         getline(std::cin, link);
         if(!rpcmode)
             link = ACPToUTF8(link);
