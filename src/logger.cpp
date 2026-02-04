@@ -16,6 +16,9 @@
 #include <sys/stat.h>
 #endif // _WIN32
 
+// 初始化全局变量
+bool g_enable_file_log = false;
+
 typedef std::lock_guard<std::mutex> guarded_mutex;
 std::mutex logger_mutex;
 
@@ -75,9 +78,6 @@ void logInit(bool rpcmode)
 
 void resultInit()
 {
-    // [控制开关] 禁止创建结果日志
-    // if (!g_enable_file_log) return;
-
     curtime = getTime(1);
     resultPath = "results" PATH_SLASH + curtime + ".log";
 }
