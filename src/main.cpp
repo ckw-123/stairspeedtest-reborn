@@ -553,13 +553,13 @@ void chkArg(int argc, char* argv[])
                 // 检查文件是否存在
                 if (!fileExist(config_file))
                 {
-                    std::cout << "INI file not found: " << config_file << std::endl;
+                    std::cout << "\nINI file not found" << std::endl;
                     exit(0);
                 }
             }
             else
             {
-                std::cout << "No INI filename" << std::endl;
+                std::cout << "\nNo INI filename" << std::endl;
                 exit(0);
             }
         }
