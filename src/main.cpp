@@ -47,7 +47,7 @@ std::string custom_group;
 std::string pngpath;
 
 // [新增] 默认配置文件名
-std::string config_file = "pref.ini";
+static std::string config_file = "pref.ini";
 
 //for use of web server
 bool webserver_mode = false;
@@ -1043,7 +1043,7 @@ int main(int argc, char* argv[])
     makeDir("logs");
     makeDir("results");
     logInit(rpcmode);
-    readConf("pref.ini");
+    readConf(config_file);
 #ifdef _WIN32
     //start up windows socket library first
     WSADATA wsd;
