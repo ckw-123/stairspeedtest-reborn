@@ -546,7 +546,7 @@ void chkArg(int argc, char* argv[])
         // [新增] /c 参数，可指定配置文件
         else if (!strcmp(argv[i], "/c"))
         {
-            if(argc > i + 1)
+            if (argc > i + 1)
             {
                 std::string arg_name = argv[++i];
                 config_file = arg_name + ".ini";
