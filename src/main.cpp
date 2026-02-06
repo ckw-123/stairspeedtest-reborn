@@ -46,6 +46,9 @@ std::string socksaddr = "127.0.0.1";
 std::string custom_group;
 std::string pngpath;
 
+// [新增] 默认配置文件名
+std::string config_file = "pref.ini";
+
 //for use of web server
 bool webserver_mode = false;
 std::string listen_address = "127.0.0.1";
@@ -540,6 +543,26 @@ void chkArg(int argc, char* argv[])
         // [新增]：解析 /l 参数
         else if (!strcmp(argv[i], "/l"))
             g_enable_file_log = true;
+        // [新增] /c 参数，可指定配置文件
+        else if (!strcmp(argv[i], "/c"))
+        {
+            if(argc > i + 1)
+            {
+                std::string arg_name = argv[++i];
+                config_file = arg_name + ".ini";
+                // 检查文件是否存在
+                if (!fileExist(config_file))
+                {
+                    std::cout << "INI file not found: " << config_file << std::endl;
+                    exit(0);
+                }
+            }
+            else
+            {
+                std::cout << "No INI filename" << std::endl;
+                exit(0);
+            }
+        }
     }
 }
 
