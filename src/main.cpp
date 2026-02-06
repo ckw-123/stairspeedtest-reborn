@@ -1156,9 +1156,11 @@ int main(int argc, char* argv[])
     {
         writeLog(LOG_TYPE_INFO, "Speedtest will now begin.");
         printMsg(SPEEDTEST_MESSAGE_BEGIN, rpcmode);
+
         // [修复] 手动为单节点情况应用自定义组
         if(custom_group.size() != 0)
             allNodes[0].group = custom_group;
+
         singleTest(allNodes[0]);
         if(single_test_force_export)
         {
