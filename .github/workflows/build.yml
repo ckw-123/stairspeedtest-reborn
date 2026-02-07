@@ -23,11 +23,11 @@ jobs:
       run: SHA=$(git rev-parse --short HEAD) && sed -i 's/\(v[0-9]\.[0-9]\.[0-9]\)/\1-'"$SHA"'/' src/version.h
     - name: Initialize Optimized Flags
       run: |
-        common_flags="-DNDEBUG -Os -ffunction-sections -fdata-sections"
+        common_flags="-DNDEBUG -Os -ffunction-sections -fdata-sections --momit-leaf-frame-pointer"
         lto_flags="-flto=auto -flto-partition=none"
         _c_flags="$common_flags -fno-asynchronous-unwind-tables"
         _c_lto_flags="$_c_flags $lto_flags"
-        _ld_flags="-Wl,--disable-reloc-section,--gc-sections,--strip-all"
+        _ld_flags="-Wl,--disable-reloc-section,--gc-sections,--no-seh,--strip-all"
         echo "C_FLAGS=$_c_flags" >> $GITHUB_ENV
         echo "C_LTO_FLAGS=$_c_lto_flags" >> $GITHUB_ENV
         echo "CXX_FLAGS=$common_flags -fno-rtti" >> $GITHUB_ENV
@@ -39,16 +39,16 @@ jobs:
       run: |
         bash scripts/build.windows.maindeps.sh
         bash scripts/build.windows.clients.sh
-# -----------------------------------------------------------
-# 【新增步骤】删除 Curl 生成的有 Bug 的 CMake 配置文件夹
-# -----------------------------------------------------------
+    # -----------------------------------------------------------
+    # 删除 Curl 生成的有 Bug 的 CMake 配置文件夹
+    # -----------------------------------------------------------
     - name: Remove broken Curl CMake Config
       run: |
         rm -rf /mingw64/lib/cmake/CURL
 
-# =======================================================
-# 【位置正确】在运行编译脚本之前，先修改磁盘上的源代码
-# =======================================================
+    # =======================================================
+    # 在运行编译脚本之前，先修改磁盘上的源代码
+    # =======================================================
     - name: Global OpenSSL 3.x Patch (Fix Windows Macro Collision)
       run: |
         # 1. 创建全局补丁头文件 src/openssl_patch.h
@@ -60,7 +60,7 @@ jobs:
         
         #include <openssl/ssl.h>
 
-        // 【关键修正】清理 Windows 头文件污染
+        // [关键修正] 清理 Windows 头文件污染
         // windows.h 定义了宏 ERROR 为 0，这破坏了 jpcre2.hpp 中的 namespace ERROR
         #ifdef ERROR
         #undef ERROR
@@ -80,7 +80,7 @@ jobs:
             return ctx;
         }
 
-        // 宏替换魔法
+        // 宏替换
         #undef SSL_CTX_new
         #define SSL_CTX_new SSL_CTX_new_patched
         EOF
@@ -89,11 +89,9 @@ jobs:
         #    如果之前已经注入过，先清除旧的注入代码，防止重复
         sed -i '/openssl_patch.h/d' CMakeLists.txt
         sed -i '/project(.*)/a add_compile_options(-include "${CMAKE_SOURCE_DIR}/src/openssl_patch.h")' CMakeLists.txt
-        
-        echo "✅ Global Hook Installed! Fixed Windows ERROR macro collision."
 
     # =======================================================
-    # 【开始编译】此时文件已经被上面的步骤修改好了，make 读取的将是新代码
+    # 此时文件已经被上面的步骤修改好了，make 读取的将是新代码
     # =======================================================
     - name: Build main program
       run: |
