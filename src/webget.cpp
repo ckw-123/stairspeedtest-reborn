@@ -22,7 +22,7 @@ extern int global_log_level;
 typedef std::lock_guard<std::mutex> guarded_mutex;
 std::mutex cache_rw_lock;
 
-std::string user_agent_str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36";
+std::string user_agent_str = "v2rayN";
 
 static inline void curl_init()
 {
